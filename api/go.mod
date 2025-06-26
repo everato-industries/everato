@@ -1,9 +1,10 @@
-module github.com/dtg-lucifer/everato/server
+module github.com/dtg-lucifer/everato/api
 
 go 1.24.1
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

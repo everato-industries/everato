@@ -78,6 +78,11 @@ test:
 	@echo ">> Running tests..."
 	@$(GO) test ./... -v -race -cover
 
+## Seed database with mockup data
+seed:
+	@echo ">> Seeding database with mockup data..."
+	go run internal/db/main/seed.go
+
 ## Generate Go code from SQL (via sqlc)
 sqlc-gen:
 	@echo ">> Generating code from SQL using sqlc..."
@@ -98,11 +103,16 @@ migrate-force:
 	@echo ">> Forcing migration version..."
 	@./scripts/migrate-force.sh
 
+## Drop the state
+migrate-drop:
+	@echo ">> Dropping migration state..."
+	@./scripts/migrate-drop.sh
+
 ## Create a new migration file
 migrate-new:
 	@read -p "Enter migration name: " name; \
-		migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq "$$name"; \
-    	echo ">> Created: {SEQ_NUMBER}_$${name}.up.sql and .down.sql"
+		echo ">> Created:"; \
+		migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq "$$name";
 
 ## Clean the binary
 clean:

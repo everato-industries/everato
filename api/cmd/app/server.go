@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/dtg-lucifer/everato/server/config"
+	v1 "github.com/dtg-lucifer/everato/server/internal/handlers/v1"
 	"github.com/dtg-lucifer/everato/server/internal/middlewares"
-	"github.com/dtg-lucifer/everato/server/internal/routes/general"
 	"github.com/dtg-lucifer/everato/server/pkg/logger"
 	"github.com/gorilla/mux"
 )
@@ -21,6 +21,7 @@ type Server struct {
 func NewServer(cfg *config.Config) *Server {
 	router := mux.NewRouter()
 	logger := logger.NewLogger()
+	defer logger.Close() // Ensure the logger is closed when the server is done
 
 	server := &Server{
 		Router: router,
@@ -34,6 +35,7 @@ func NewServer(cfg *config.Config) *Server {
 }
 
 func (s *Server) initializeMiddlewares() {
+	s.Router.Use(middlewares.RequestIDMiddleware)
 	s.Router.Use(middlewares.CorsMiddleware)
 	s.Router.Use(middlewares.LoggerMiddleware)
 }
@@ -42,7 +44,7 @@ func (s *Server) initializeRoutes() {
 	// Setting up the API prefix
 	apiv1 := s.Router.PathPrefix("/api/v1").Subrouter()
 
-	apiv1.HandleFunc("/health", general.HealthCheckHandler).Methods("GET")
+	v1.NewHealthCheckHandler().RegisterRoutes(apiv1)
 
 	// TODO: Authentication routes
 	// TODO: User routes
