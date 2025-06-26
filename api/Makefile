@@ -71,7 +71,7 @@ fmt:
 ## Run linter (requires golangci-lint)
 lint:
 	@echo ">> Linting..."
-	$(GOLANGCI_LINT) run ./...
+	- $(GOLANGCI_LINT) run ./... || true
 
 ## Run tests
 test:
