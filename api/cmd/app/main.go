@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/dtg-lucifer/everato/server/config"
+	"github.com/dtg-lucifer/everato/api/config"
 	"github.com/joho/godotenv"
 )
 

@@ -4,17 +4,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dtg-lucifer/everato/server/config"
-	v1 "github.com/dtg-lucifer/everato/server/internal/handlers/v1"
-	"github.com/dtg-lucifer/everato/server/internal/middlewares"
-	"github.com/dtg-lucifer/everato/server/pkg/logger"
+	"github.com/dtg-lucifer/everato/api/config"
+	v1 "github.com/dtg-lucifer/everato/api/internal/handlers/v1"
+	"github.com/dtg-lucifer/everato/api/internal/middlewares"
+	"github.com/dtg-lucifer/everato/api/pkg/logger"
 	"github.com/gorilla/mux"
 )
 
 type Server struct {
 	Router *mux.Router
 	Cfg    *config.Config
-	Logger *logger.Logger
 }
 
 // Initialize the server
@@ -26,7 +25,6 @@ func NewServer(cfg *config.Config) *Server {
 	server := &Server{
 		Router: router,
 		Cfg:    cfg,
-		Logger: logger,
 	}
 
 	server.initializeMiddlewares()
@@ -45,6 +43,7 @@ func (s *Server) initializeRoutes() {
 	apiv1 := s.Router.PathPrefix("/api/v1").Subrouter()
 
 	v1.NewHealthCheckHandler().RegisterRoutes(apiv1)
+	v1.NewAuthHandler().RegisterRoutes(apiv1)
 
 	// TODO: Authentication routes
 	// TODO: User routes
@@ -54,7 +53,8 @@ func (s *Server) initializeRoutes() {
 }
 
 func (s *Server) Start() error {
+	logger := logger.NewLogger().StdoutLogger
 	addr := ":" + strconv.Itoa(s.Cfg.Server.Port)
-	s.Logger.StdoutLogger.Info("Server started listening", "addr", addr)
+	logger.Info("Server started running on", "port", addr)
 	return http.ListenAndServe(addr, s.Router)
 }

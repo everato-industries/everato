@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/dtg-lucifer/everato/server/pkg/logger"
-)
+import "github.com/dtg-lucifer/everato/api/pkg/logger"
 
 func main() {
 	logger := logger.NewLogger()

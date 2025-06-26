@@ -3,7 +3,7 @@ package v1
 import (
 	"net/http"
 
-	"github.com/dtg-lucifer/everato/server/internal/utils"
+	"github.com/dtg-lucifer/everato/api/internal/utils"
 	"github.com/gorilla/mux"
 )
 

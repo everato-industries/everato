@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dtg-lucifer/everato/server/internal/utils"
+	"github.com/dtg-lucifer/everato/api/internal/utils"
 )
 
 // Logger middleware to log the http requests

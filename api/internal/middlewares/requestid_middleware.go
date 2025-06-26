@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/dtg-lucifer/everato/server/pkg/logger"
+	"github.com/dtg-lucifer/everato/api/pkg/logger"
 	"github.com/google/uuid"
 )
 
@@ -26,8 +26,6 @@ func RequestIDMiddleware(next http.Handler) http.Handler {
 		// Log the request ID for debugging purposes
 		logger.StdoutLogger.Info("Incoming request", "RequestID", requestId.String())
 		logger.FileLogger.Info("Incoming request", "RequestID", requestId.String())
-
-		defer logger.Close()
 
 		// Call the next handler
 		next.ServeHTTP(w, r)
