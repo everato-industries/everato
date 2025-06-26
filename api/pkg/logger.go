@@ -1,4 +1,4 @@
-package logger
+package pkg
 
 import (
 	"log/slog"

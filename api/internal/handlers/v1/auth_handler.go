@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/dtg-lucifer/everato/api/internal/db/repository"
-	"github.com/dtg-lucifer/everato/api/internal/services/auth"
+	"github.com/dtg-lucifer/everato/api/internal/services/user"
 	"github.com/dtg-lucifer/everato/api/internal/utils"
-	"github.com/dtg-lucifer/everato/api/pkg/logger"
+	"github.com/dtg-lucifer/everato/api/pkg"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
 )
@@ -17,7 +17,7 @@ type AuthHandler struct {
 }
 
 func NewAuthHandler() *AuthHandler {
-	logger := logger.NewLogger()
+	logger := pkg.NewLogger()
 	defer logger.Close()
 
 	conn, err := pgx.Connect(
@@ -55,13 +55,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if h.Repo == nil {
 		wr.Status(http.StatusBadGateway).Json(
 			utils.M{
-				"message": "BAD_GATEWAY",
+				"message": "BAD_GATEWAY, No database connection, Oops!",
 			},
 		)
 		return
 	}
 
-	auth.CreateUser(wr, h.Repo)
+	user.CreateUser(wr, h.Repo)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

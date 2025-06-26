@@ -7,7 +7,7 @@ import (
 	"github.com/dtg-lucifer/everato/api/config"
 	v1 "github.com/dtg-lucifer/everato/api/internal/handlers/v1"
 	"github.com/dtg-lucifer/everato/api/internal/middlewares"
-	"github.com/dtg-lucifer/everato/api/pkg/logger"
+	"github.com/dtg-lucifer/everato/api/pkg"
 	"github.com/gorilla/mux"
 )
 
@@ -19,7 +19,7 @@ type Server struct {
 // Initialize the server
 func NewServer(cfg *config.Config) *Server {
 	router := mux.NewRouter()
-	logger := logger.NewLogger()
+	logger := pkg.NewLogger()
 	defer logger.Close() // Ensure the logger is closed when the server is done
 
 	server := &Server{
@@ -53,7 +53,7 @@ func (s *Server) initializeRoutes() {
 }
 
 func (s *Server) Start() error {
-	logger := logger.NewLogger().StdoutLogger
+	logger := pkg.NewLogger().StdoutLogger
 	addr := ":" + strconv.Itoa(s.Cfg.Server.Port)
 	logger.Info("Server started running on", "port", addr)
 	return http.ListenAndServe(addr, s.Router)

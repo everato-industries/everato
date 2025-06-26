@@ -3,14 +3,15 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/dtg-lucifer/everato/api/pkg/logger"
+	"github.com/dtg-lucifer/everato/api/pkg"
 	"github.com/google/uuid"
 )
 
 func RequestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := logger.NewLogger()
+		logger := pkg.NewLogger()
 		defer logger.Close() // Ensure the logger is closed after the request is processed
+
 		// Generate a unique request ID
 		requestId, err := uuid.NewRandom()
 		if err != nil {
