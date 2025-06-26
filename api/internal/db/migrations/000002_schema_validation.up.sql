@@ -1,0 +1,56 @@
+-- TICKET_TYPE
+CREATE TABLE IF NOT EXISTS ticket_types (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    price FLOAT NOT NULL,
+    available_tickets INT NOT NULL
+);
+
+-- COUPONS
+CREATE TABLE IF NOT EXISTS coupons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    discount_percentage FLOAT NOT NULL,
+    valid_from TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ NOT NULL,
+    usage_limit INT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- BOOKINGS
+CREATE TABLE IF NOT EXISTS bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    coupon_id UUID REFERENCES coupons(id),
+    status BOOKING_STATUS NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- TICKETS
+CREATE TABLE IF NOT EXISTS tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    price FLOAT NOT NULL,
+    status TICKET_STATUS NOT NULL DEFAULT 'BOOKED',
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ticket_type UUID NOT NULL REFERENCES ticket_types(id),
+    booking_id UUID REFERENCES bookings(id),
+    qr_code TEXT
+);
+
+-- PAYMENTS
+CREATE TABLE IF NOT EXISTS payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    amount FLOAT NOT NULL,
+    type PAYMENT_TYPE NOT NULL,
+    status PAYMENT_STATUS NOT NULL DEFAULT 'DONE',
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ticket_id UUID NOT NULL REFERENCES tickets(id)
+);
