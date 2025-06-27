@@ -1,4 +1,0 @@
-.env*
-bin/
-logs/
-**/pgdata
