@@ -77,24 +77,24 @@ func (hw *HttpWriter) Json(data M) {
 	}
 }
 
-// Read the body into a Map of `strings` (as keys) mapped to `any` (as values)
-func (hw *HttpWriter) ParseBody(body *map[string]any) error {
+// ParseBody method takes pointer to either a map or a struct
+func (hw *HttpWriter) ParseBody(body any) error {
 	// Check if the body is not provided
 	if hw.R.Body == nil {
-		return errors.New("The request doesn't have a body")
+		return errors.New("the request doesn't have a body")
 	}
 
 	// Check if the request doesn't have a proper JSON body
 	contentType := hw.R.Header.Get(HeaderContentTypeName)
 	if contentType == "" || !strings.Contains(contentType, HeaderContentTypeJson) {
-		return errors.New("The request should have a proper JSON body")
+		return errors.New("the request should have a proper JSON body")
 	}
 
 	raw := hw.R.Body  // Getting the raw body
 	defer raw.Close() // Close the body
 
 	decoder := json.NewDecoder(raw) // Decoding the raw body
-	err := decoder.Decode(body)     // Into the actual map (pointer)
+	err := decoder.Decode(body)     // Into the actual map / struct
 	if err != nil {
 		return errors.New("Failed to parse JSON body: " + err.Error())
 	}

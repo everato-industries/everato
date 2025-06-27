@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
-	_ "github.com/dtg-lucifer/everato/internal/handlers"
+	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/services/user"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
@@ -13,9 +13,26 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// AuthHandler handles authentication-related routes and logic
+//
+// Route prefix:
+//   - `/api/vX/auth/`
+//
+// Routes:
+//   - /register
+//   - /login
+//   - /verify-email
+//   - /refresh
+//   - /reset-password
+//   - /change-password
 type AuthHandler struct {
-	Repo *repository.Queries
+	Repo     *repository.Queries
+	Conn     *pgx.Conn
+	BasePath string
 }
+
+// Asserting the implementation of the handler interface
+var _ handlers.Handler = (*AuthHandler)(nil)
 
 func NewAuthHandler() *AuthHandler {
 	logger := pkg.NewLogger()
@@ -35,7 +52,9 @@ func NewAuthHandler() *AuthHandler {
 	repo := repository.New(conn)
 
 	return &AuthHandler{
-		Repo: repo,
+		Repo:     repo,
+		Conn:     conn,
+		BasePath: "/auth",
 	}
 }
 
@@ -62,7 +81,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.CreateUser(wr, h.Repo)
+	user.CreateUser(wr, h.Repo, h.Conn)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

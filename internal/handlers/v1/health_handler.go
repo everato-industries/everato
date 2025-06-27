@@ -3,16 +3,24 @@ package v1
 import (
 	"net/http"
 
-	_ "github.com/dtg-lucifer/everato/internal/handlers"
+	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/gorilla/mux"
 )
 
-type HandlerFunc func(http.ResponseWriter, *http.Request)
-
+// Package v1 provides the implementation of the health check handler
+//
+// Route prefix:
+//   - /health
+//
+// Routes:
+//   - /health
 type HealthCheckHandler struct {
 	BasePath string
 }
+
+// Asserting the implementation of the handler interface
+var _ handlers.Handler = (*HealthCheckHandler)(nil)
 
 func NewHealthCheckHandler() *HealthCheckHandler {
 	return &HealthCheckHandler{
