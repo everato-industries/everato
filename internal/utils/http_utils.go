@@ -52,6 +52,13 @@ func (hw *HttpWriter) Json(data M) {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
+	// Append the request id with the original data
+	if r := hw.W.Header().Get("X-Request-ID"); r == "" {
+		data["request_id"] = "unknown"
+	} else {
+		data["request_id"] = r
+	}
+
 	// Convert data to JSON bytes
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -110,11 +117,15 @@ func (hw *HttpWriter) Text(text string) {
 	// Set content type header - must be set BEFORE WriteHeader
 	hw.W.Header().Set(HeaderContentTypeName, HeaderContentTypeText)
 
+	// Append the request id with the response
+	reqId := hw.W.Header().Get("X-Request-ID")
+	res := strings.Join([]string{text, ("RequestId=" + reqId)}, ";")
+
 	// Write status code that was set with Status()
 	hw.W.WriteHeader(hw.StatusCode)
 
 	// Write text data
-	_, err := hw.W.Write([]byte(text))
+	_, err := hw.W.Write([]byte(res))
 	if err != nil {
 		logger.StdoutLogger.Error("Error writing TEXT to the response", "err", err.Error())
 		return
@@ -139,6 +150,10 @@ func (hw *HttpWriter) Error(err error, status_code ...int) {
 	// Write status code
 	hw.W.WriteHeader(hw.StatusCode)
 
+	// Append the request id with the error
+	reqId := hw.W.Header().Get("X-Request-ID")
+	res := strings.Join([]string{err.Error(), ("RequestId=" + reqId)}, ";")
+
 	// Write error message
-	hw.W.Write([]byte(err.Error()))
+	hw.W.Write([]byte(res))
 }

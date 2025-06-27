@@ -16,7 +16,11 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 	user_dto := &CreateUserDTO{}
 	err := wr.ParseBody(user_dto)
 	if err != nil {
-		logger.StdoutLogger.Error("Error parsing body", "err", err.Error())
+		logger.StdoutLogger.Error(
+			"Error parsing body",
+			"err", err.Error(),
+			"requestId", wr.R.Header.Get("X-Request-ID"),
+		)
 		wr.Status(http.StatusBadRequest).Json(
 			utils.M{
 				"error": err.Error(),
@@ -27,7 +31,11 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 
 	// Validate whether the sent data is valid or not
 	if err := user_dto.Validate(); err != nil {
-		logger.StdoutLogger.Error("Error parsing body", "err", err.Error())
+		logger.StdoutLogger.Error(
+			"Error parsing body",
+			"err", err.Error(),
+			"requestId", wr.R.Header.Get("X-Request-ID"),
+		)
 		wr.Status(http.StatusBadRequest).Json(
 			utils.M{
 				"error":   err.Error(),
@@ -40,8 +48,16 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 	// Create the actual user in the database
 	tx, err := conn.Begin(wr.R.Context())
 	if err != nil {
-		logger.StdoutLogger.Error("Error starting a transaction", "err", err.Error())
-		logger.FileLogger.Error("Error starting a transaction", "err", err.Error())
+		logger.StdoutLogger.Error(
+			"Error starting a transaction",
+			"err", err.Error(),
+			"requestId", wr.R.Header.Get("X-Request-ID"),
+		)
+		logger.FileLogger.Error(
+			"Error starting a transaction",
+			"err", err.Error(),
+			"requestId", wr.R.Header.Get("X-Request-ID"),
+		)
 		wr.Status(http.StatusInternalServerError).Json(
 			utils.M{
 				"error":   "Failed to begin transaction",
