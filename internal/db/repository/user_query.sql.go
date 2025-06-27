@@ -12,7 +12,6 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-
 INSERT INTO users (
   first_name, last_name, email, password
 ) VALUES (
@@ -27,9 +26,6 @@ type CreateUserParams struct {
 	Password  string
 }
 
-// =========================================================
-// User related queries
-// =========================================================
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.FirstName,
