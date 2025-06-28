@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
@@ -142,8 +140,7 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 		}
 
 		// Parse the mail template here
-		tpl_path := filepath.Join("templates", "mail", "verify_email.html")
-		tpl, err := template.ParseFiles(tpl_path)
+		tpl, err := pkg.GetTemplate("templates/mail/verify_email.html")
 		if err != nil {
 			logger.StdoutLogger.Error("Error parsing the mail template", "err", err.Error())
 			logger.FileLogger.Error("Error parsing the mail template", "err", err.Error())
