@@ -34,6 +34,7 @@ type AuthHandler struct {
 // Asserting the implementation of the handler interface
 var _ handlers.Handler = (*AuthHandler)(nil)
 
+// Returns a pointer to a newly created the AuthHandler instance
 func NewAuthHandler() *AuthHandler {
 	logger := pkg.NewLogger()
 	defer logger.Close()
@@ -61,17 +62,18 @@ func NewAuthHandler() *AuthHandler {
 func (h *AuthHandler) RegisterRoutes(router *mux.Router) {
 	auth_router := router.PathPrefix("/auth").Subrouter()
 
-	auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)
-	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)
-	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodPost)
-	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)
-	auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)
-	auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost)
+	auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
+	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)                    // Login an existing user (returning the jwt token)
+	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodPost)       // Verify the user's email address
+	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)                // Refresh the JWT token
+	auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)   // Reset the user's password
+	auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost) // Change the user's password
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	wr := utils.NewHttpWriter(w, r)
 
+	// If no repo is set then there must be a error, to be sure ABORT!
 	if h.Repo == nil {
 		wr.Status(http.StatusBadGateway).Json(
 			utils.M{
@@ -81,6 +83,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create a new user in the database
 	user.CreateUser(wr, h.Repo, h.Conn)
 }
 
@@ -89,7 +92,20 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	// Implement email verification logic here
+	wr := utils.NewHttpWriter(w, r)
+
+	// If no repo is set then there must be a error, to be sure ABORT!
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// Upon clicking on the URL of the verify email this will set the verified = True of the user
+	user.VerifyUser(wr, h.Repo, h.Conn)
 }
 
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
