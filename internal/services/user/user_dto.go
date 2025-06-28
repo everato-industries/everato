@@ -29,6 +29,7 @@ func (c CreateUserDTO) Validate() error {
 // This will automatically override the original password with the hashed one
 func (c *CreateUserDTO) HashPassword() error {
 	logger := pkg.NewLogger()
+	defer logger.Close() // Ensure the logger is closed when the function exits
 
 	hashed_pass, err := bcrypt.GenerateFromPassword([]byte(c.Password), bcrypt.DefaultCost) // Generate the hash of the password
 	if err != nil {

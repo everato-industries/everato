@@ -40,8 +40,7 @@ func NewHttpWriter(w http.ResponseWriter, r *http.Request) *HttpWriter {
 
 // Status sets the HTTP status code for the response
 func (hw *HttpWriter) Status(code int) *HttpWriter {
-	hw.StatusCode = code // Set the status code to the struct
-	// -					to use it on chained operations
+	hw.StatusCode = code // Set the status code to the struct to use it on chained operations
 
 	// We'll write the header just once in the Json/Text/Error methods
 	return hw

@@ -43,10 +43,14 @@ func (s *Server) initializeRoutes() {
 	// Setting up the API prefix
 	apiv1 := s.Router.PathPrefix("/api/v1").Subrouter()
 
+	// Route Group:
+	// 	- General
 	v1.NewHealthCheckHandler().RegisterRoutes(apiv1)
+
+	// Route Group:
+	// 	- Authentication
 	v1.NewAuthHandler().RegisterRoutes(apiv1)
 
-	// TODO: Authentication routes
 	// TODO: User routes
 	// TODO: Event routes
 	// TODO: Ticket routes
@@ -54,7 +58,9 @@ func (s *Server) initializeRoutes() {
 }
 
 func (s *Server) Start() error {
-	logger := pkg.NewLogger().StdoutLogger
+	logger := pkg.NewLogger()
+	defer logger.Close() // Ensure the logger is closed when the server is done
+
 	addr := ":" + strconv.Itoa(s.Cfg.Server.Port)
 	logger.Info("Server started running on", "port", addr)
 	return http.ListenAndServe(addr, s.Router)

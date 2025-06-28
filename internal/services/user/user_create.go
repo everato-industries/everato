@@ -12,6 +12,7 @@ import (
 
 func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 	logger := pkg.NewLogger()
+	defer logger.Close() // Ensure the logger is closed when the function exits
 
 	user_dto := &CreateUserDTO{}
 	err := wr.ParseBody(user_dto)
