@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
-	mailer "github.com/dtg-lucifer/everato/internal/services/mail"
+	"github.com/dtg-lucifer/everato/internal/services/mailer"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/jackc/pgx/v5"
@@ -128,6 +128,9 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 
 	tx.Commit(wr.R.Context()) // Commit the transaction
 
+	// =================================================================
+	// GOROUTINE starts
+	//
 	// Send the verification mail on a seperate thread
 	go func() {
 		logger := pkg.NewLogger()
@@ -181,7 +184,8 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 		})
 
 		mail_service.SendEmail(wr) // Send the email
-	}()
+	}() // GOROUTINE finishes
+	// =================================================================
 
 	// Return the actual user data
 	wr.Status(http.StatusCreated).Json(
