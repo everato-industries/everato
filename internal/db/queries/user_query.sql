@@ -29,6 +29,13 @@ SET first_name = $2,
 WHERE id = $1
 RETURNING *;
 
+-- name: VerifyUser :one
+UPDATE users
+SET verified = TRUE,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;
+
 -- name: SearchUsersMatchingByName :many
 SELECT * FROM users
 WHERE first_name ILIKE '%' || $1 || '%'

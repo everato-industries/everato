@@ -151,7 +151,11 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 		}
 
 		// Build the verification URL
-		verification_url := fmt.Sprintf("%s/auth/verify-email", utils.GetEnv("API_URL", "http://localhost:8080/api/v1"))
+		verification_url := fmt.Sprintf(
+			"%s/auth/verify-email?uid=%s",
+			utils.GetEnv("API_URL", "http://localhost:8080/api/v1"),
+			user.ID,
+		)
 
 		var body bytes.Buffer // Body data for the email
 		err = tpl.Execute(&body, EmailPayload{

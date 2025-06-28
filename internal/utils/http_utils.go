@@ -83,6 +83,34 @@ func (hw *HttpWriter) Json(data M) {
 	}
 }
 
+// Respond with a HTML template
+//
+// Parameters:
+//   - view - this is the path to the template to render
+//   - data - this could be any type of data which is to feed to the view while rendering
+func (hw *HttpWriter) Html(view string, data any) {
+	logger := pkg.NewLogger()
+	defer logger.Close()
+
+	// Check if the view path exists or not
+	// then get the template from there
+	tmp, err := pkg.GetTemplate(view)
+
+	// Set content type header - must be set BEFORE WriteHeader
+	hw.W.Header().Set(HeaderContentTypeName, "text/html")
+
+	// Write status code that was set with Status()
+	hw.W.WriteHeader(hw.StatusCode)
+
+	// Execute the template with the provided data
+	err = tmp.Execute(hw.W, data)
+	if err != nil {
+		logger.StdoutLogger.Error("Error executing HTML template", "err", err.Error())
+		logger.FileLogger.Error("Error executing HTML template", "err", err.Error())
+		return
+	}
+}
+
 // ParseBody method takes pointer to either a map or a struct
 func (hw *HttpWriter) ParseBody(body any) error {
 	// Check if the body is not provided

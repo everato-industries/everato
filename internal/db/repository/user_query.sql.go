@@ -214,3 +214,27 @@ func (q *Queries) UpdateUserByID(ctx context.Context, arg UpdateUserByIDParams) 
 	)
 	return i, err
 }
+
+const verifyUser = `-- name: VerifyUser :one
+UPDATE users
+SET verified = TRUE,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, first_name, last_name, email, password, verified, created_at, updated_at
+`
+
+func (q *Queries) VerifyUser(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, verifyUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Verified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
