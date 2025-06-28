@@ -1,10 +1,16 @@
 package user
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"html/template"
 	"net/http"
+	"path/filepath"
+	"strconv"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
+	mailer "github.com/dtg-lucifer/everato/internal/services/mail"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/jackc/pgx/v5"
@@ -75,8 +81,7 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 	)
 	if err == nil {
 		// If no error, it means the user exists
-		logger.StdoutLogger.Error("Error Finding user") // Log the error
-		tx.Rollback(wr.R.Context())                     // Rollback the transaction
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
 		wr.Status(http.StatusConflict).Json(
 			utils.M{
 				"error":   "User with this email already exists",
@@ -123,11 +128,67 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 
 	tx.Commit(wr.R.Context()) // Commit the transaction
 
+	// Send the verification mail on a seperate thread
+	go func() {
+		logger := pkg.NewLogger()
+		defer logger.Close()
+
+		// Initialize the payload
+		type EmailPayload struct {
+			VerificationLink string // Verification link
+		}
+
+		// Parse the mail template here
+		tpl_path := filepath.Join("templates", "mail", "verify_email.html")
+		tpl, err := template.ParseFiles(tpl_path)
+		if err != nil {
+			logger.StdoutLogger.Error("Error parsing the mail template", "err", err.Error())
+			logger.FileLogger.Error("Error parsing the mail template", "err", err.Error())
+			return
+		}
+
+		// Build the verification URL
+		verification_url := fmt.Sprintf("%s/auth/verify-email", utils.GetEnv("API_URL", "http://localhost:8080/api/v1"))
+
+		var body bytes.Buffer // Body data for the email
+		err = tpl.Execute(&body, EmailPayload{
+			VerificationLink: verification_url,
+		})
+		if err != nil {
+			logger.StdoutLogger.Error("Error parsing the mail template", "err", err.Error())
+			logger.FileLogger.Error("Error parsing the mail template", "err", err.Error())
+			return
+		}
+
+		smtp_port, err := strconv.Atoi(utils.GetEnv("SMTP_PORT", "587"))
+		if err != nil {
+			logger.StdoutLogger.Error("Error parsing SMTP server PORT", "err", err.Error())
+			logger.FileLogger.Error("Error parsing SMTP server PORT", "err", err.Error())
+			return
+		}
+
+		// Instantiate the mailer service
+		mail_service := mailer.NewMailService(&mailer.MailerParameters{
+			To:      user.Email,
+			Subject: "Verify your account!!",
+			Body:    &body,
+			Options: &mailer.MailerOptions{
+				Host:        utils.GetEnv("SMTP_HOST", "smtp.gmail.com"),
+				Port:        uint16(smtp_port),
+				SenderEmail: utils.GetEnv("SMTP_EMAIL", "dev.bosepiush@gmail.com"),
+				AppPassword: utils.GetEnv("SMTP_PASSWORD", "SUPER_SECRET_PASSWORD"),
+			},
+		})
+
+		mail_service.SendEmail(wr) // Send the email
+	}()
+
 	// Return the actual user data
 	wr.Status(http.StatusCreated).Json(
 		utils.M{
 			"success": true,
 			"message": "User registration endpoint reached successfully",
+			"note":    "Kindly check your email and verify your account withing 24 hours",
 			"data":    user,
 		},
 	)
