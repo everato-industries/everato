@@ -183,7 +183,14 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 			},
 		})
 
-		mail_service.SendEmail(wr) // Send the email
+		logger.StdoutLogger.Info("Sending verifcation email", "user_email", user.Email)
+
+		res, err := mail_service.SendEmail(wr) // Send the email
+		if res != mailer.MailerSuccess && err != nil {
+			logger.StdoutLogger.Error("Error sending verification email", "err", err.Error())
+			logger.FileLogger.Error("Error sending verification email", "err", err.Error())
+			return
+		}
 	}() // GOROUTINE finishes
 	// =================================================================
 
