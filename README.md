@@ -1,72 +1,143 @@
-# Everato API Integration
+# Everato - Modern Event Management Platform
 
-This repository contains the **Everato API**, a generalized and decoupled API integration for **Everato**. The API is designed to work independently from the **Data Handler** and **Notification Service**, ensuring modularity and scalability.
+**Everato** is a comprehensive event management platform designed as a monolithic, server-side rendered application. Built with modern Go technology, Everato provides a complete solution for event creation, management, ticketing, and analytics in a single, efficient binary.
 
 ## Overview
 
-The **Everato API** serves as the central communication hub for various components within the Everato ecosystem. It facilitates interactions between the **Main Dashboard**, **Event Dashboards**, **Metrics & Logging**, and backend services like the **Data Handler** and **Notification Service**.
+Everato combines all functionality into a cohesive platform that handles everything from event creation to analytics, ticketing systems, payment processing, and administration through a unified, server-side rendered interface.
 
-### Key Features
+![Everato Platform Overview](assets/arch_00.png)
 
-- **Event Creation**: After creating an event, the API communicates with the **Admin Dashboard** and **Event Dashboard** for further processing.
-- **Event Bus Integration**: Publishes and subscribes to events using **Kafka** and **Zookeeper**.
-- **gRPC Communication**: Handles gRPC calls to acknowledge or return values to connected services.
-- **Database Communication**: Ensures seamless interaction with the database for storing and retrieving data.
-- **Metrics & Logging**: Provides detailed metrics and logging for monitoring and debugging.
+## Key Features
 
-## Architecture
+- **Single Binary Deployment**: The entire application runs from a single Go binary with an external configuration file, making deployment and scaling simple.
+- **Server-Side Rendering**: Fast, SEO-friendly pages with reduced client-side JavaScript requirements.
+- **Event Management**: Create, update, and manage events with customizable fields.
+- **Ticketing System**: Flexible ticket types, pricing tiers, and inventory management.
+- **User Management**: Comprehensive user registration, authentication, and profile management.
+- **Analytics Dashboard**: Real-time insights into event performance, attendance, and revenue.
+- **Payment Processing**: Secure payment handling with multiple provider options.
+- **Email Notifications**: Automated confirmations, reminders, and marketing communications.
+- **QR Code Generation**: Secure ticket validation through unique QR codes.
 
-The architecture is designed to ensure decoupled and efficient communication between components:
+## Architecture Highlights
 
-1. **Main Dashboard**: Interacts with the API for general operations.
-2. **Event Dashboards**: Receives updates and communicates with the API after an event is created.
-3. **Event Bus**: Utilizes **Kafka** and **Zookeeper** for event publishing and subscription.
-4. **Data Handler**: Subscribes to events from the Event Bus and interacts with the database.
-5. **Notification Service**: Subscribes to events from the Event Bus to send notifications.
-6. **Metrics & Logging**: Monitors API operations and logs relevant data.
+- **Monolithic Design**: All components are integrated into a single application, eliminating microservice complexity.
+- **SSR Performance**: Server-side rendering delivers faster initial page loads and improved SEO.
+- **Event Bus**: Internal event processing using Kafka for reliable asynchronous operations.
+- **Database Integration**: Direct PostgreSQL connectivity with migration tooling.
+- **Comprehensive Logging**: Structured logging for monitoring and debugging.
 
 ## Tech Stack
 
-- **Programming Language**: Go
-- **Event Bus**: Kafka & Zookeeper
-- **Communication Protocol**: gRPC
-- **Dashboards**: Admin Dashboard and Event Dashboard
-- **Database**: Integrated with the Data Handler
-
-## Workflow
-
-1. **Event Creation**:
-
-    - The API communicates with the **Admin Dashboard** and **Event Dashboard**.
-    - Further communication with the database is handled via the **Data Handler**.
-
-2. **Event Bus**:
-
-    - The API publishes events to the Event Bus.
-    - The **Data Handler** and **Notification Service** subscribe to these events.
-
-3. **Metrics & Logging**:
-    - The API sends metrics and logs to the monitoring system.
-
-## Diagram
-
-Below is the visual representation of the architecture:
-
-![Everato API Integration Diagram](assets/plan_revision_00.png)
+- **Backend**: Go with modern frameworks and libraries
+- **Database**: PostgreSQL
+- **Messaging**: Kafka & Zookeeper
+- **Frontend**: Server-side rendered templates with minimal JavaScript
+- **Development**: Docker for local development environment
 
 ## Getting Started
 
-To set up the API, follow these steps:
+### Prerequisites
 
-1. Clone the repository.
-2. Install dependencies.
-3. Configure Kafka and Zookeeper for the Event Bus.
-4. Run the API service.
+- Go 1.24+
+- PostgreSQL 15+
+- Docker and Docker Compose (for development environment)
+
+### Quick Start
+
+1. Clone the repository:
+
+    ```
+    git clone https://github.com/yourusername/everato.git
+    cd everato
+    ```
+
+2. Set up environment variables:
+
+    ```
+    cp .env.example .env
+    # Edit .env file with your configuration
+    ```
+
+3. Start the database:
+
+    ```
+    make db
+    ```
+
+4. Run migrations:
+
+    ```
+    make migrate-up
+    ```
+
+5. Run the application:
+
+    ```
+    # For development with hot reload
+    make dev
+
+    # For production build
+    make build
+    ./bin/everato
+    ```
+
+## Development
+
+### Building
+
+```
+make build
+```
+
+### Testing
+
+```
+make test
+```
+
+### Database Management
+
+```
+# Create a new migration
+make migrate-new
+
+# Apply migrations
+make migrate-up
+
+# Roll back a migration
+make migrate-down
+
+# Seed the database with sample data
+make seed
+```
+
+## Deployment
+
+Everato can be deployed as a single binary with an accompanying configuration file:
+
+1. Build for production:
+
+    ```
+    make build
+    ```
+
+2. Copy the binary and configuration file to your server:
+
+    ```
+    scp bin/everato config.yaml user@your-server:/path/to/deployment/
+    ```
+
+3. Run the application:
+    ```
+    ./everato -config config.yaml
+    ```
 
 ## Contributing
 
-Contributions are welcome! Please follow the guidelines in the `CONTRIBUTING.md` file.
+Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
