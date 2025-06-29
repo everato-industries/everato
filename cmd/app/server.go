@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
@@ -37,6 +38,9 @@ func (s *Server) initializeMiddlewares() {
 	s.Router.Use(middlewares.RequestIDMiddleware)
 	s.Router.Use(middlewares.CorsMiddleware)
 	s.Router.Use(middlewares.LoggerMiddleware)
+
+	// Add a 30 second timeout to all of the routes
+	s.Router.Use(middlewares.TimeoutMiddleware(time.Second * 10))
 }
 
 func (s *Server) initializeRoutes() {
@@ -55,6 +59,9 @@ func (s *Server) initializeRoutes() {
 	// TODO: Event routes
 	// TODO: Ticket routes
 	// TODO: Notification routes
+
+	// Notfound handler
+	v1.NewNotFoundHandler().RegisterRoutes(apiv1)
 }
 
 func (s *Server) Start() error {

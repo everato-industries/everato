@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// Custom response writer wrapper struct
+//
+// It will help us to track whether the header has been written to or not
 type ResponseWriter struct {
 	http.ResponseWriter
 	StatusCode int

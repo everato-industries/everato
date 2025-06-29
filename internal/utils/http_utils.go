@@ -179,7 +179,7 @@ func (hw *HttpWriter) Error(err error, status_code ...int) {
 
 	// Append the request id with the error
 	reqId := hw.W.Header().Get("X-Request-ID")
-	res := strings.Join([]string{err.Error(), ("RequestId=" + reqId)}, ";")
+	res := strings.Join([]string{err.Error(), ("\nRequestId=" + reqId + ";")}, ";")
 
 	// Write error message
 	hw.W.Write([]byte(res))

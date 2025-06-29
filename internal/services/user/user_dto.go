@@ -7,11 +7,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// CreateUserDTO represents the data transfer object for creating a new user
 type CreateUserDTO struct {
 	FistName string `json:"first_name" validate:"required,min=2,max=50"`
 	LastName string `json:"last_name" validate:"required,min=2,max=50"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8,max=100"`
+}
+
+// LoginUserDTO represents login credentials
+type LoginUserDTO struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // Validate checks the CreateUserDTO for required fields and formats.
@@ -50,4 +57,15 @@ func (c CreateUserDTO) ToCreteUserParams() repository.CreateUserParams {
 		Email:     c.Email,
 		Password:  c.Password,
 	}
+}
+
+// Validate checks the LoginUserDTO for required fields and formats
+func (l LoginUserDTO) Validate() error {
+	v := validator.New(validator.WithRequiredStructEnabled())
+	return v.Struct(l)
+}
+
+// VerifyPassword checks if the provided password matches the hashed password
+func (l LoginUserDTO) VerifyPassword(hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(l.Password))
 }
