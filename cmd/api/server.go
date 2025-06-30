@@ -55,10 +55,13 @@ func (s *Server) initializeRoutes() {
 	// 	- Authentication
 	v1.NewAuthHandler().RegisterRoutes(apiv1)
 
-	// TODO: User routes
-	// TODO: Event routes
-	// TODO: Ticket routes
-	// TODO: Notification routes
+	// Route Group:
+	// 	- Events
+	v1.NewEventHandler().RegisterRoutes(apiv1)
+
+	// @TODO: User routes
+	// @TODO: Ticket routes
+	// @TODO: Notification routes
 
 	// Notfound handler
 	v1.NewNotFoundHandler().RegisterRoutes(apiv1)

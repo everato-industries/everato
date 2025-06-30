@@ -1,6 +1,6 @@
 ## Project metadata
 APP_NAME := everato
-CMD_PATH := ./cmd/app
+CMD_PATH := ./cmd/api
 BIN_DIR := ./bin
 LOGS_DIR := ./logs
 BIN_FILE := $(BIN_DIR)/$(APP_NAME)

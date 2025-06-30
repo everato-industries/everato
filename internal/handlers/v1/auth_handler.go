@@ -60,14 +60,14 @@ func NewAuthHandler() *AuthHandler {
 }
 
 func (h *AuthHandler) RegisterRoutes(router *mux.Router) {
-	auth_router := router.PathPrefix("/auth").Subrouter()
+	auth_router := router.PathPrefix(h.BasePath).Subrouter()
 
 	auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
 	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)                    // Login an existing user (returning the jwt token)
 	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodGet)        // Verify the user's email address
-	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)                // Refresh the JWT token
-	auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)   // Reset the user's password
-	auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost) // Change the user's password
+	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)                // Refresh the JWT token @TODO
+	auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)   // Reset the user's password @TODO
+	auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost) // Change the user's password @TODO
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {

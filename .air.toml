@@ -5,7 +5,7 @@ tmp_dir = "bin"
 [build]
 args_bin = []
 bin = "./bin/everato"
-cmd = "go build -o ./bin/everato ./cmd/app/*"
+cmd = "go build -o ./bin/everato ./cmd/api/*"
 delay = 1000
 exclude_dir = ["assets", "vendor", "testdata", "logs"]
 exclude_file = []
