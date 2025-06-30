@@ -50,6 +50,7 @@ func (s *Server) initializeRoutes() {
 	// Route Group:
 	// 	- General
 	v1.NewHealthCheckHandler().RegisterRoutes(apiv1)
+	v1.NewMetricsHandler().RegisterRoutes(apiv1)
 
 	// Route Group:
 	// 	- Authentication

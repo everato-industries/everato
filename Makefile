@@ -62,6 +62,11 @@ db:
 	@echo ">> Running the database ..."
 	@sudo docker compose -f docker/docker-compose.yaml up postgres
 
+logs:
+	@echo ">> Running the logs ..."
+	@sudo docker compose -f docker/docker-compose.yaml up loki grafana promtail prometheus
+.PHONY: logs
+
 ## Format all Go code
 fmt:
 	@echo ">> Formatting..."

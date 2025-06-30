@@ -1,9 +1,29 @@
 services:
     api:
-        build: .
+        build:
+            context: ../
+            dockerfile: ./docker/Dockerfile
         ports:
             - "8080:8080"
-        env_file: ../.env
+        environment:
+            DB_HOST: postgres
+            DB_PORT: 5432
+            DB_USER: piush
+            DB_PASSWORD: root_access
+            DB_NAME: everato
+            DB_SSLMODE: disable
+            DB_URL: postgres://piush:root_access@postgres:5432/everato?sslmode=disable
+            MIGRATIONS_DIR: internal/db/migrations
+            PORT: 8080
+            ENV: development
+            API_URL: "http://localhost:8080/api/v1"
+            JWT_SECRET: "jakdjf87a8((*8___jhadja#kjaaaoitrak"
+            JWT_EXPIRATION: "24h"
+            KAFKA_BROKERS: localhost:9092
+            KAFKA_TOPIC: everato-events
+            ZOOKEEPER_URL: localhost:2181
+            SMTP_HOST: "smtp.gmail.com"
+            SMTP_PORT: "587"
         depends_on:
             - kafka
             - postgres
@@ -19,6 +39,53 @@ services:
         volumes:
             - pgdata:/var/lib/postgresql/data
             - ./init/init-uuid.sql:/docker-entrypoint-initdb.d/init-uuid.sql
+        networks:
+            - everato_network
+
+    # ----------------------------------------------------------
+    # Logging and Monitoring Services
+    loki:
+        image: grafana/loki:2.9.3
+        ports:
+            - "3100:3100"
+        command: -config.file=/etc/loki/local-config.yaml
+        networks:
+            - everato_network
+
+    promtail:
+        image: grafana/promtail:2.9.3
+        ports:
+            - "9080:9080"
+        volumes:
+            - ../logs:/var/log/everato
+            - ./promtail-config.yaml:/etc/promtail/config.yaml
+        command: -config.file=/etc/promtail/config.yaml
+        depends_on:
+            - loki
+        networks:
+            - everato_network
+
+    prometheus:
+        image: prom/prometheus:latest
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        networks:
+            - everato_network
+        # depends_on:
+        # - api
+
+    grafana:
+        image: grafana/grafana:10.2.3
+        ports:
+            - "3000:3000"
+        depends_on:
+            - loki
+            - prometheus
+        networks:
+            - everato_network
+    # ----------------------------------------------------------
 
     kafka:
         image: bitnami/kafka:latest
@@ -31,11 +98,19 @@ services:
             KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
         depends_on:
             - zookeeper
+        networks:
+            - everato_network
 
     zookeeper:
         image: bitnami/zookeeper:latest
         ports:
             - "2181:2181"
+        networks:
+            - everato_network
 
 volumes:
     pgdata:
+
+networks:
+    everato_network:
+        driver: bridge
