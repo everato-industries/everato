@@ -2,6 +2,7 @@
 INSERT INTO events (
     title,
     description,
+    slug,
     banner,
     icon,
     admin_id,
@@ -23,6 +24,7 @@ INSERT INTO events (
     $8,
     $9,
     $10,
+    $11,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) RETURNING *;
@@ -31,10 +33,15 @@ INSERT INTO events (
 SELECT * FROM events
 WHERE id = $1;
 
+-- name: GetEventBySlug :one
+SELECT * FROM events
+WHERE slug = $1;
+
 -- name: SearchByName :many
 SELECT * FROM events
     WHERE title ILIKE '%' || $1 || '%'
     OR description ILIKE '%' || $1 || '%'
+    OR slug ILIKE '%' || $1 || '%'
     ORDER BY start_time DESC
 LIMIT $2 OFFSET $3;
 
@@ -48,14 +55,15 @@ UPDATE events
 SET
     title = $2,
     description = $3,
-    banner = $4,
-    icon = $5,
-    admin_id = $6,
-    start_time = $7,
-    end_time = $8,
-    location = $9,
-    total_seats = $10,
-    available_seats = $11,
+    slug = $4,
+    banner = $5,
+    icon = $6,
+    admin_id = $7,
+    start_time = $8,
+    end_time = $9,
+    location = $10,
+    total_seats = $11,
+    available_seats = $12,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;
