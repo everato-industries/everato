@@ -37,6 +37,10 @@ WHERE id = $1;
 SELECT * FROM events
 WHERE slug = $1;
 
+-- name: SearchSlug :one
+SELECT slug FROM events
+WHERE slug = $1;
+
 -- name: SearchByName :many
 SELECT * FROM events
     WHERE title ILIKE '%' || $1 || '%'

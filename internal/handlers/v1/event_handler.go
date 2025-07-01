@@ -52,9 +52,7 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Create a subrouter
 	events := router.PathPrefix(h.BasePath).Subrouter()
 
-	// -----------------------------------------------------
 	// Routes
-	// -----------------------------------------------------
 	events.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
 	events.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an event
 	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodPost)   // Get all events

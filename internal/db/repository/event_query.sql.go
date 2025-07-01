@@ -15,6 +15,7 @@ const createEvent = `-- name: CreateEvent :one
 INSERT INTO events (
     title,
     description,
+    slug,
     banner,
     icon,
     admin_id,
@@ -36,14 +37,16 @@ INSERT INTO events (
     $8,
     $9,
     $10,
+    $11,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at
+) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug
 `
 
 type CreateEventParams struct {
 	Title          string
 	Description    string
+	Slug           string
 	Banner         string
 	Icon           string
 	AdminID        pgtype.UUID
@@ -58,6 +61,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 	row := q.db.QueryRow(ctx, createEvent,
 		arg.Title,
 		arg.Description,
+		arg.Slug,
 		arg.Banner,
 		arg.Icon,
 		arg.AdminID,
@@ -82,6 +86,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.AvailableSeats,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }
@@ -97,7 +102,7 @@ func (q *Queries) DeleteEvent(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getEventByID = `-- name: GetEventByID :one
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
 WHERE id = $1
 `
 
@@ -118,12 +123,40 @@ func (q *Queries) GetEventByID(ctx context.Context, id pgtype.UUID) (Event, erro
 		&i.AvailableSeats,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
+
+const getEventBySlug = `-- name: GetEventBySlug :one
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+WHERE slug = $1
+`
+
+func (q *Queries) GetEventBySlug(ctx context.Context, slug string) (Event, error) {
+	row := q.db.QueryRow(ctx, getEventBySlug, slug)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Banner,
+		&i.Icon,
+		&i.AdminID,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Location,
+		&i.TotalSeats,
+		&i.AvailableSeats,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
     ORDER BY start_time DESC
 LIMIT $1 OFFSET $2
 `
@@ -156,6 +189,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 			&i.AvailableSeats,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -168,7 +202,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 }
 
 const listEventsByAdmin = `-- name: ListEventsByAdmin :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
     WHERE admin_id = $1
 ORDER BY start_time DESC
 `
@@ -196,6 +230,7 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 			&i.AvailableSeats,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -208,9 +243,10 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 }
 
 const searchByName = `-- name: SearchByName :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
     WHERE title ILIKE '%' || $1 || '%'
     OR description ILIKE '%' || $1 || '%'
+    OR slug ILIKE '%' || $1 || '%'
     ORDER BY start_time DESC
 LIMIT $2 OFFSET $3
 `
@@ -244,6 +280,7 @@ func (q *Queries) SearchByName(ctx context.Context, arg SearchByNameParams) ([]E
 			&i.AvailableSeats,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -255,28 +292,41 @@ func (q *Queries) SearchByName(ctx context.Context, arg SearchByNameParams) ([]E
 	return items, nil
 }
 
+const searchSlug = `-- name: SearchSlug :one
+SELECT slug FROM events
+WHERE slug = $1
+`
+
+func (q *Queries) SearchSlug(ctx context.Context, slug string) (string, error) {
+	row := q.db.QueryRow(ctx, searchSlug, slug)
+	err := row.Scan(&slug)
+	return slug, err
+}
+
 const updateEvent = `-- name: UpdateEvent :one
 UPDATE events
 SET
     title = $2,
     description = $3,
-    banner = $4,
-    icon = $5,
-    admin_id = $6,
-    start_time = $7,
-    end_time = $8,
-    location = $9,
-    total_seats = $10,
-    available_seats = $11,
+    slug = $4,
+    banner = $5,
+    icon = $6,
+    admin_id = $7,
+    start_time = $8,
+    end_time = $9,
+    location = $10,
+    total_seats = $11,
+    available_seats = $12,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at
+RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug
 `
 
 type UpdateEventParams struct {
 	ID             pgtype.UUID
 	Title          string
 	Description    string
+	Slug           string
 	Banner         string
 	Icon           string
 	AdminID        pgtype.UUID
@@ -292,6 +342,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		arg.ID,
 		arg.Title,
 		arg.Description,
+		arg.Slug,
 		arg.Banner,
 		arg.Icon,
 		arg.AdminID,
@@ -316,6 +367,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.AvailableSeats,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }

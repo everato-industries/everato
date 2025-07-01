@@ -224,6 +224,7 @@ type Event struct {
 	AvailableSeats int32
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
+	Slug           string
 }
 
 type Payment struct {
