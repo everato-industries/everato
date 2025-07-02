@@ -1,4 +1,4 @@
-package v1
+package api
 
 import (
 	"github.com/dtg-lucifer/everato/internal/handlers"

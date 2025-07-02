@@ -7,7 +7,7 @@ import (
 
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
-	v1 "github.com/dtg-lucifer/everato/internal/handlers/v1"
+	"github.com/dtg-lucifer/everato/internal/handlers/v1/api"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
@@ -29,8 +29,11 @@ func NewServer(cfg *config.Config) *Server {
 		Cfg:    cfg,
 	}
 
-	server.initializeMiddlewares()
-	server.initializeRoutes()
+	server.initializeStaticFS()    // Initialize the static file system to serve files
+	server.initializeViews()       // Initialize the handlers to handle the html views
+	server.initializeMiddlewares() // Initialize the middlewares for the server
+	server.initializeRoutes()      // Initialize the routes for the server
+
 	return server
 }
 
@@ -49,23 +52,32 @@ func (s *Server) initializeRoutes() {
 
 	// Route Group:
 	// 	- General
-	v1.NewHealthCheckHandler().RegisterRoutes(apiv1)
-	v1.NewMetricsHandler().RegisterRoutes(apiv1)
+	api.NewHealthCheckHandler().RegisterRoutes(apiv1)
+	api.NewMetricsHandler().RegisterRoutes(apiv1)
 
 	// Route Group:
 	// 	- Authentication
-	v1.NewAuthHandler().RegisterRoutes(apiv1)
+	api.NewAuthHandler().RegisterRoutes(apiv1)
 
 	// Route Group:
 	// 	- Events
-	v1.NewEventHandler().RegisterRoutes(apiv1)
+	api.NewEventHandler().RegisterRoutes(apiv1)
 
 	// @TODO: User routes
 	// @TODO: Ticket routes
 	// @TODO: Notification routes
 
 	// Notfound handler
-	v1.NewNotFoundHandler().RegisterRoutes(apiv1)
+	api.NewNotFoundHandler().RegisterRoutes(apiv1)
+}
+
+func (s *Server) initializeStaticFS() {
+	// Serve static files from the "static" directory
+}
+
+func (s *Server) initializeViews() {
+	// Initialize views if needed
+	// This can be used to render HTML templates or other view engines
 }
 
 func (s *Server) Start() error {
