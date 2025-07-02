@@ -89,7 +89,8 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		return
 	}
 
-	if _, err := repo.WithTx(tx).CreateEvent(wr.R.Context(), eventDTO.ToCreateEventParams()); err != nil {
+	event, err := repo.WithTx(tx).CreateEvent(wr.R.Context(), eventDTO.ToCreateEventParams())
+	if err != nil {
 		logger.StdoutLogger.Error("Failed to create event in database", "err", err.Error())
 		tx.Rollback(wr.R.Context()) // Rollback the transaction
 		wr.Status(http.StatusInternalServerError).Json(
@@ -112,4 +113,23 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		)
 		return
 	}
+
+	err = tx.Commit(wr.R.Context())
+	if err != nil {
+		logger.StdoutLogger.Error("Failed to commit transaction", "err", err.Error())
+		wr.Status(http.StatusInternalServerError).Json(
+			utils.M{
+				"message": "Internal server error, please try again later.",
+				"err":     err.Error(),
+			},
+		)
+		return
+	}
+
+	wr.Status(http.StatusCreated).Json(
+		utils.M{
+			"message": "Event created successfully!",
+			"data":    event,
+		},
+	)
 }
