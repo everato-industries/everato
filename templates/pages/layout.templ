@@ -1,4 +1,6 @@
-package views
+package pages
+
+import "github.com/dtg-lucifer/everato/templates/components"
 
 templ Layout() {
 	<!DOCTYPE html>
@@ -6,15 +8,17 @@ templ Layout() {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<link rel="stylesheet" href="/public/css/styles.css"/>
 			<title>Everato</title>
 		</head>
 		<body>
 			<header>
-				<h1>Everato</h1>
+				@components.Navbar()
 			</header>
 			<main>
 				{ children... }
 			</main>
 		</body>
+		<script src="/public/js/scripts.js"></script>
 	</html>
 }

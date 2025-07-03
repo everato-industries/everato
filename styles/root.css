@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer reset;
+@layer theme;
+@layer vars;
+
+@layer vars {
+    :root {
+        --fg-color: #f1f1f1;
+        --bg-color: #151515;
+        --primary-color: #cfffe2;
+        --secondary-color: #a2d5c6;
+        --font-size: 16px;
+    }
+}
+
+@layer reset {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Arial", sans-serif;
+    }
+}
+
+@layer theme {
+    * {
+        color: var(--fg-color);
+        background-color: var(--bg-color);
+    }
+}

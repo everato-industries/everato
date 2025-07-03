@@ -1,6 +1,6 @@
 ## Project metadata
 APP_NAME := everato
-CMD_PATH := ./cmd
+CMD_PATH := .
 BIN_DIR := ./bin
 LOGS_DIR := ./logs
 BIN_FILE := $(BIN_DIR)/$(APP_NAME)
@@ -13,6 +13,7 @@ TEMPL := templ
 SQLC := sqlc
 GOLANGCI_LINT := golangci-lint
 MIGRATE := migrate
+TAILWIND := ./bin/tailwind
 
 ## DB config - use environment variables from .env file
 DB_URL ?= postgres://piush:root_access@localhost:5432/everato?sslmode=disable
@@ -27,9 +28,9 @@ GOFLAGS := -mod=readonly
 all: build
 .PHONY: all
 
-bootstrap: sqlc golangci air golang-migrate
+install: sqlc golangci air golang-migrate tailwind templ
 	sudo chmod -R +x ./scripts
-.PHONY: bootstrap
+.PHONY: install
 
 sqlc:
 	@echo ">> Downloading sqlc..."
@@ -41,10 +42,25 @@ golangci:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.6
 .PHONY: golangci
 
+tailwind:
+	@echo ">> Downloading tailwindcss-cli into $(TAILWIND) ..."
+	curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
+		chmod +x tailwindcss-linux-x64 && \
+		mkdir -p ./bin && \
+		mv tailwindcss-linux-x64 $(TAILWIND) && \
+		$(TAILWIND) --version && \
+		echo "Tailwind CSS downloaded and made executable."
+.PHONY: tailwind
+
 air:
 	@echo ">> Downloading air..."
 	go install github.com/air-verse/air@latest
 .PHONY: air
+
+templ:
+	@echo ">> Downloading templ..."
+	go install github.com/a-h/templ/cmd/templ@latest
+.PHONY: templ
 
 golang-migrate:
 	@echo ">> Downloading golang-migrate..."
@@ -141,6 +157,21 @@ migrate-new:
 		echo ">> Created:"; \
 		migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq "$$name";
 .PHONY: migrate-new
+
+## Generate the templ files
+templ-watch:
+	templ generate --watch
+.PHONY: templ-watch
+
+## Generate the css from tailwind classed
+tailwind-watch:
+	$(TAILWIND) -i ./styles/root.css -o ./public/css/styles.css --watch --minify
+.PHONY: tailwind-watch
+
+watch:
+	@echo ">> Watching for changes in templ files and css classes..."
+	$(MAKE) --no-print-directory -j3 templ-watch tailwind-watch dev
+.PHONY: watch
 
 ## Clean the binary
 clean:

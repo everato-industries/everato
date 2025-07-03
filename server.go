@@ -8,6 +8,7 @@ import (
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/handlers/v1/api"
+	"github.com/dtg-lucifer/everato/internal/handlers/v1/views"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
@@ -72,12 +73,16 @@ func (s *Server) initializeRoutes() {
 }
 
 func (s *Server) initializeStaticFS() {
-	// Serve static files from the "static" directory
+	// Serve static files from the public directory
+	s.Router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", PublicFS()))
 }
 
 func (s *Server) initializeViews() {
 	// Initialize views if needed
 	// This can be used to render HTML templates or other view engines
+	//
+	//
+	views.NewViewsHandler("/").RegisterRoutes(s.Router)
 }
 
 func (s *Server) Start() error {

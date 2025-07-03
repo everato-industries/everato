@@ -5,16 +5,16 @@ tmp_dir = "bin"
 [build]
 args_bin = []
 bin = "./bin/everato"
-cmd = "go build -o ./bin/everato -tags=dev ./cmd/*"
+cmd = "go build -o ./bin/everato -tags=dev ."
 delay = 1000
 exclude_dir = ["assets", "vendor", "testdata", "logs"]
 exclude_file = []
-exclude_regex = ["_test.go", ".log"]
+exclude_regex = ["_test.go", ".log", "_templ.go"]
 exclude_unchanged = false
 follow_symlink = false
 full_bin = ""
-include_dir = []
-include_ext = ["go", "tpl", "tmpl", "html"]
+include_dir = ["templates"]
+include_ext = ["go", "tpl", "templ", "html"]
 include_file = []
 kill_delay = "0s"
 log = "./logs/build-errors.log"
