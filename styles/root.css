@@ -1,31 +1,44 @@
 @import "tailwindcss";
 
-@layer reset;
-@layer theme;
 @layer vars;
+@layer theme;
 
 @layer vars {
     :root {
         --fg-color: #f1f1f1;
-        --bg-color: #151515;
-        --primary-color: #cfffe2;
-        --secondary-color: #a2d5c6;
+        --bg-primary-color: #151515;
+        --bg-secondary-color: #202020;
+        --fg-primary-color: #cfffe2;
+        --fg-secondary-color: #a2d5c6;
         --font-size: 16px;
     }
 }
 
-@layer reset {
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: "Arial", sans-serif;
-    }
-}
-
-@layer theme {
-    * {
+@layer utilities {
+    body {
         color: var(--fg-color);
-        background-color: var(--bg-color);
+        background-color: var(--bg-primary-color);
+    }
+    .bg-secondary {
+        @apply bg-[#303030];
+    }
+    .fg-primary {
+        @apply text-[#cfffe2];
+    }
+    .fg-secondary {
+        @apply text-[#a2d5c6];
+    }
+    .bg-primary {
+        @apply bg-[#151515];
+    }
+    .bg-light-primary {
+        @apply bg-[#cfffe2];
+    }
+    .bg-light-secondary {
+        @apply bg-[#a2d5c6];
+    }
+
+    .btn {
+        @apply w-full bg-[#a2d5c6] text-black rounded px-4 py-2 hover:bg-[#606060] hover:text-[#a2d5c6] transition-colors;
     }
 }

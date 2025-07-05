@@ -184,3 +184,41 @@ func (hw *HttpWriter) Error(err error, status_code ...int) {
 	// Write error message
 	hw.W.Write([]byte(res))
 }
+
+// CookieParams sets a structured way of passing parameteres to the SetCookie method
+type CookieParams struct {
+	Name     string        // Name of the cookie
+	Value    string        // Value of the cookie
+	MaxAge   int           // Maximum age of the cookie in seconds
+	Path     string        // Path for which the cookie is valid
+	Domain   string        // Domain for which the cookie is valid
+	Secure   bool          // Whether the cookie should be secure (only sent over HTTPS)
+	HttpOnly bool          // Whether the cookie should be HTTP-only (not accessible via JavaScript)
+	SameSite http.SameSite // SameSite attribute for the cookie
+}
+
+// SetCookie sets a cookie in the HTTP response
+// Parameters:
+// - name - the name of the cookie
+// - value - the value of the cookie
+// // - maxAge - the maximum age of the cookie in seconds
+// // - path - the path for which the cookie is valid
+// // - domain - the domain for which the cookie is valid
+// // - secure - whether the cookie should be secure (only sent over HTTPS)
+// // - httpOnly - whether the cookie should be HTTP-only (not accessible via JavaScript)
+//
+// Use the `CookieParams`
+func (hw *HttpWriter) SetCookie(params CookieParams) {
+	cookie := &http.Cookie{
+		Name:     params.Name,
+		Value:    params.Value,
+		MaxAge:   params.MaxAge,
+		Path:     params.Path,
+		Domain:   params.Domain,
+		Secure:   params.Secure,
+		HttpOnly: params.HttpOnly,
+		SameSite: params.SameSite,
+	}
+
+	http.SetCookie(hw.W, cookie)
+}

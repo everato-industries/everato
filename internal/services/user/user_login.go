@@ -121,12 +121,14 @@ func LoginUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 		return
 	}
 
+	exp_time := time.Now().Add(exp) // Calculate the expiration time based on the parsed duration
+
 	token, err := signer.Sign(jwt.MapClaims{
 		"sub": fmt.Sprintf("jwt_login_user_id_%s", user.ID.String()),  // Subject of the token, usually the user ID
 		"aud": fmt.Sprintf("jwt_login_user_name_%s", user.FirstName),  // Audience of the token
 		"iss": fmt.Sprintf("%s", utils.GetEnv("APP_NAME", "everato")), // Issuer of the token
 		"iat": jwt.NewNumericDate(time.Now()),                         // Set the issued at time for the token
-		"exp": jwt.NewNumericDate(time.Now().Add(exp)),                // Set the expiration time for the token (i.e by default it is 12h)
+		"exp": jwt.NewNumericDate(exp_time),                           // Set the expiration time for the token (i.e by default it is 12h)
 		"uid": user.ID.String(),                                       // User ID of the logged in user
 	})
 	if err != nil {
@@ -167,6 +169,18 @@ func LoginUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 		"requestId", wr.R.Header.Get("X-Request-ID"),
 	)
 
+	wr.SetCookie(
+		utils.CookieParams{
+			Name:     "jwt",
+			Value:    token,
+			MaxAge:   exp_time.Second(),
+			Path:     "/",
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			HttpOnly: true,
+			// Domain:   wr.R.Host,
+		},
+	)
 	wr.Status(http.StatusOK).Json(
 		utils.M{
 			"message": "User logged in successfully!",

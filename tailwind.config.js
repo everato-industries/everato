@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 const tailwindConfig = {
-    content: ["./**/*.html", "./**/*.templ", "./**/*_templ.go"],
+    content: ["./**/*.html", "./**/*.templ"],
     safelist: [],
 };
 

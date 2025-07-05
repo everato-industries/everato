@@ -13,15 +13,18 @@ exclude_regex = ["_test.go", ".log", "_templ.go"]
 exclude_unchanged = false
 follow_symlink = false
 full_bin = ""
-include_dir = ["templates"]
-include_ext = ["go", "tpl", "templ", "html"]
+include_dir = []
+include_ext = ["go", "html", "css"]
 include_file = []
 kill_delay = "0s"
 log = "./logs/build-errors.log"
 poll = false
 poll_interval = 0
 post_cmd = []
-pre_cmd = []
+pre_cmd = [
+    "templ generate",
+    "./bin/tailwind -i ./styles/root.css -o ./public/css/styles.css",
+]
 rerun = false
 rerun_delay = 500
 send_interrupt = false

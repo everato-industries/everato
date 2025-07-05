@@ -1,0 +1,4 @@
+input:active,
+input:focus {
+    outline: none;
+}

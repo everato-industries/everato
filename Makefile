@@ -28,23 +28,23 @@ GOFLAGS := -mod=readonly
 all: build
 .PHONY: all
 
-install: sqlc golangci air golang-migrate tailwind templ
+install: sqlc golangci air golang-migrate tailwind templ browser-sync
 	sudo chmod -R +x ./scripts
 .PHONY: install
 
 sqlc:
 	@echo ">> Downloading sqlc..."
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 .PHONY: sqlc
 
 golangci:
 	@echo ">> Downloading golangci-lint..."
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.6
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.6
 .PHONY: golangci
 
 tailwind:
 	@echo ">> Downloading tailwindcss-cli into $(TAILWIND) ..."
-	curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
+	@curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
 		chmod +x tailwindcss-linux-x64 && \
 		mkdir -p ./bin && \
 		mv tailwindcss-linux-x64 $(TAILWIND) && \
@@ -54,17 +54,25 @@ tailwind:
 
 air:
 	@echo ">> Downloading air..."
-	go install github.com/air-verse/air@latest
+	@go install github.com/air-verse/air@latest
 .PHONY: air
+
+browser-sync:
+	@echo ">> Downloading browser-sync..."
+	@pnpm install -g browser-sync || \
+		npm install -g browser-sync || \
+		yarn global add browser-sync || \
+		echo "Browser-sync installation failed. Please install it manually."
+.PHONY: browser-sync
 
 templ:
 	@echo ">> Downloading templ..."
-	go install github.com/a-h/templ/cmd/templ@latest
+	@go install github.com/a-h/templ/cmd/templ@latest
 .PHONY: templ
 
 golang-migrate:
 	@echo ">> Downloading golang-migrate..."
-	go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	@go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 .PHONY: golang-migrate
 
 ## Build the Go project
@@ -165,12 +173,27 @@ templ-watch:
 
 ## Generate the css from tailwind classed
 tailwind-watch:
-	$(TAILWIND) -i ./styles/root.css -o ./public/css/styles.css --watch --minify
+	$(TAILWIND) -i ./styles/root.css -o ./public/css/styles.css --watch
 .PHONY: tailwind-watch
+
+serve:
+	@echo ">> Starting the server..."
+	browser-sync \
+	    start \
+		--server \
+		--ss "./public/**/*" \
+		--files "templates/pages/**.html" \
+		--port 3000 \
+		--no-open \
+		--no-ui \
+		--no-notify \
+		--reload-delay 1000
+		# --proxy "http://localhost:8080"
+.PHONY: serve
 
 watch:
 	@echo ">> Watching for changes in templ files and css classes..."
-	$(MAKE) --no-print-directory -j3 templ-watch tailwind-watch dev
+	$(MAKE) --no-print-directory -j3 tailwind-watch serve dev
 .PHONY: watch
 
 ## Clean the binary

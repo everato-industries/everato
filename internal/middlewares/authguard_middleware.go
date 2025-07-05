@@ -11,102 +11,97 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const (
-	AuthBearerPrefix = "Bearer "
-)
+const AuthBearerPrefix = "Bearer "
 
-type AuthGuardMiddleware struct {
-	Repo *repository.Queries
-	Conn *pgx.Conn
+type AuthMiddleware struct {
+	Repo     *repository.Queries
+	Conn     *pgx.Conn
+	Redirect bool // true for SSR views, false for APIs
 }
 
-func NewAuthGuardMiddleware(repo *repository.Queries, conn *pgx.Conn) *AuthGuardMiddleware {
-	return &AuthGuardMiddleware{
-		Repo: repo,
-		Conn: conn,
+func NewAuthMiddleware(repo *repository.Queries, conn *pgx.Conn, redirect bool) *AuthMiddleware {
+	return &AuthMiddleware{
+		Repo:     repo,     // For doing further operations of DB
+		Conn:     conn,     // For doing further operations of DB
+		Redirect: redirect, // true for SSR views, false for APIs
 	}
 }
 
-func (a *AuthGuardMiddleware) AuthGuard(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		wr := utils.NewHttpWriter(w, r)
+func isUnauthenticatedAllowedPath(path string) bool {
+	publicPaths := []string{
+		"/auth/login",
+		"/auth/register",
+	}
 
-		// Check for the Authorization header
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Authorization header is missing",
-				},
-			)
-			return
+	for _, p := range publicPaths {
+		if path == p || strings.HasSuffix(path, p) && strings.HasPrefix(path, "/api/") {
+			return true
 		}
+	}
+	return false
+}
 
-		// Validate the JWT token (this is a placeholder, implement your own validation logic)
+func (am *AuthMiddleware) Guard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := am.extractToken(r)
+
 		key := utils.GetEnv("JWT_SECRET", "SUPER_SECRET_KEY")
 		signer := pkg.NewTokenSigner(key)
 
-		if len(authHeader) <= len(AuthBearerPrefix) {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Authorization header is malformed",
-				},
-			)
+		if token == "" {
+			if isUnauthenticatedAllowedPath(r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			am.unauthorized(w, r, "Token not found or malformed")
 			return
 		}
-
-		if !strings.HasPrefix(authHeader, AuthBearerPrefix) {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Authorization header must start with 'Bearer '",
-				},
-			)
-			return
-		}
-
-		token := authHeader[len(AuthBearerPrefix):] // Get the token as the substring without the bearer prefix
 
 		claims, err := signer.Verify(token)
 		if err != nil {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Invalid or expired token",
-				},
-			)
+			if isUnauthenticatedAllowedPath(r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			am.unauthorized(w, r, "Invalid or expired token")
 			return
 		}
 
-		if uid, ok := claims["uid"]; !ok || uid == "" {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Token does not contain a valid user ID",
-				},
-			)
+		uid, ok := claims["uid"]
+		if !ok || uid == "" {
+			if isUnauthenticatedAllowedPath(r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			am.unauthorized(w, r, "Token missing UID")
 			return
 		}
 
-		// Check if the UID is valid or not
-
-		// Set the user ID in the request context for further use
-		new_ctx := context.WithValue(r.Context(), "uid", claims["uid"].(string))
-
-		// Create a new request with the updated context
-		new_request, err := http.NewRequestWithContext(
-			new_ctx,
-			r.Method,
-			r.URL.String(),
-			r.Body,
-		)
-		if err != nil {
-			wr.Status(http.StatusUnauthorized).Json(
-				utils.M{
-					"message": "Failed to create a new request with context",
-				},
-			)
-			return
-		}
-
-		// If the token is valid, proceed to the next handler
-		h.ServeHTTP(w, new_request) // Set the request to be the new updated one
+		ctx := context.WithValue(r.Context(), "uid", uid.(string))
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
 	})
+}
+
+func (am *AuthMiddleware) extractToken(r *http.Request) string {
+	// Try cookie first
+	if cookie, err := r.Cookie("jwt"); err == nil {
+		return cookie.Value
+	}
+	// Fallback to Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if after, ok := strings.CutPrefix(authHeader, AuthBearerPrefix); ok {
+		return after
+	}
+	return ""
+}
+
+func (am *AuthMiddleware) unauthorized(w http.ResponseWriter, r *http.Request, message string) {
+	if am.Redirect {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+	} else {
+		utils.NewHttpWriter(w, r).Status(http.StatusUnauthorized).Json(utils.M{
+			"message": message,
+		})
+	}
 }

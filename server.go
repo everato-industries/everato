@@ -82,7 +82,11 @@ func (s *Server) initializeViews() {
 	// This can be used to render HTML templates or other view engines
 	//
 	//
-	views.NewViewsHandler("/").RegisterRoutes(s.Router)
+	view_router := s.Router.PathPrefix("/").Subrouter()
+
+	views.NewViewsHandler("/").RegisterRoutes(view_router)
+	views.NewAuthHandler("/auth").RegisterRoutes(view_router)
+	views.NewEventHandler("/events").RegisterRoutes(view_router)
 }
 
 func (s *Server) Start() error {
