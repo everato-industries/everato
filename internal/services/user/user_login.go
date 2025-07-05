@@ -173,9 +173,9 @@ func LoginUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 		utils.CookieParams{
 			Name:     "jwt",
 			Value:    token,
-			MaxAge:   exp_time.Second(),
+			MaxAge:   int(exp.Seconds()),
 			Path:     "/",
-			Secure:   true,
+			Secure:   false, // TODO: Set to true in production
 			SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,
 			// Domain:   wr.R.Host,
