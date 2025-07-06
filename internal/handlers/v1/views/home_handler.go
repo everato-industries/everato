@@ -3,9 +3,10 @@ package views
 import (
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
-	"github.com/dtg-lucifer/everato/internal/utils"
+	"github.com/dtg-lucifer/everato/templates/pages"
 	"github.com/gorilla/mux"
 )
 
@@ -34,6 +35,8 @@ func (h *ViewsHandler) RegisterRoutes(router *mux.Router) {
 
 func (h *ViewsHandler) HomeRoute(w http.ResponseWriter, r *http.Request) {
 	// Render the home page using the templ package
-	wr := utils.NewHttpWriter(w, r)
-	wr.Html("templates/pages/home_page.html", utils.M{})
+	// wr := utils.NewHttpWriter(w, r)
+	// wr.Html("templates/pages/home_page.html", utils.M{})
+
+	templ.Handler(pages.Home()).ServeHTTP(w, r)
 }

@@ -1,0 +1,32 @@
+package pages
+
+templ Header(title string) {
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>{ title }</title>
+		<link rel="stylesheet" href="/public/css/styles.css"/>
+		<link rel="icon" href="/public/favicon.ico" type="image/x-icon"/>
+	</head>
+}
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		@Header(title)
+		<body>
+			<div class="container">
+				<header>
+					<h1>{ title }</h1>
+				</header>
+				<main>
+					{ children... }
+				</main>
+				<footer>
+					<p>&copy; 2025 Everato</p>
+				</footer>
+			</div>
+		</body>
+		<script src="/public/js/script.js"></script>
+	</html>
+}

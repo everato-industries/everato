@@ -14,7 +14,20 @@ const (
 	HeaderContentTypeName = "Content-Type"
 	HeaderContentTypeJson = "application/json"
 	HeaderContentTypeText = "text/plain"
+	HeaderContentTypeHtml = "text/html; charset=utf-8"
 )
+
+// CookieParams sets a structured way of passing parameteres to the SetCookie method
+type CookieParams struct {
+	Name     string        // Name of the cookie
+	Value    string        // Value of the cookie
+	MaxAge   int           // Maximum age of the cookie in seconds
+	Path     string        // Path for which the cookie is valid
+	Domain   string        // Domain for which the cookie is valid
+	Secure   bool          // Whether the cookie should be secure (only sent over HTTPS)
+	HttpOnly bool          // Whether the cookie should be HTTP-only (not accessible via JavaScript)
+	SameSite http.SameSite // SameSite attribute for the cookie
+}
 
 // Mapping of the default map of a string to any value to custom type
 type M map[string]any
@@ -97,7 +110,7 @@ func (hw *HttpWriter) Html(view string, data any) {
 	tmp, err := pkg.GetTemplate(view)
 
 	// Set content type header - must be set BEFORE WriteHeader
-	hw.W.Header().Set(HeaderContentTypeName, "text/html")
+	hw.W.Header().Set(HeaderContentTypeName, HeaderContentTypeHtml)
 
 	// Write status code that was set with Status()
 	hw.W.WriteHeader(hw.StatusCode)
@@ -185,27 +198,15 @@ func (hw *HttpWriter) Error(err error, status_code ...int) {
 	hw.W.Write([]byte(res))
 }
 
-// CookieParams sets a structured way of passing parameteres to the SetCookie method
-type CookieParams struct {
-	Name     string        // Name of the cookie
-	Value    string        // Value of the cookie
-	MaxAge   int           // Maximum age of the cookie in seconds
-	Path     string        // Path for which the cookie is valid
-	Domain   string        // Domain for which the cookie is valid
-	Secure   bool          // Whether the cookie should be secure (only sent over HTTPS)
-	HttpOnly bool          // Whether the cookie should be HTTP-only (not accessible via JavaScript)
-	SameSite http.SameSite // SameSite attribute for the cookie
-}
-
 // SetCookie sets a cookie in the HTTP response
 // Parameters:
-// - name - the name of the cookie
-// - value - the value of the cookie
-// // - maxAge - the maximum age of the cookie in seconds
-// // - path - the path for which the cookie is valid
-// // - domain - the domain for which the cookie is valid
-// // - secure - whether the cookie should be secure (only sent over HTTPS)
-// // - httpOnly - whether the cookie should be HTTP-only (not accessible via JavaScript)
+//   - name - the name of the cookie
+//   - value - the value of the cookie
+//   - maxAge - the maximum age of the cookie in seconds
+//   - path - the path for which the cookie is valid
+//   - domain - the domain for which the cookie is valid
+//   - secure - whether the cookie should be secure (only sent over HTTPS)
+//   - httpOnly - whether the cookie should be HTTP-only (not accessible via JavaScript)
 //
 // Use the `CookieParams`
 func (hw *HttpWriter) SetCookie(params CookieParams) {
