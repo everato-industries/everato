@@ -1,3 +1,5 @@
+// Package utils provides utility functions for the Everato application.
+// It includes helpers for HTTP handling, environment variables, and data conversion.
 package utils
 
 import (
@@ -9,15 +11,17 @@ import (
 	"github.com/dtg-lucifer/everato/pkg"
 )
 
-// Constants for header values
+// Constants for common HTTP header values
+// These are used throughout the application for consistent content type handling
 const (
-	HeaderContentTypeName = "Content-Type"
-	HeaderContentTypeJson = "application/json"
-	HeaderContentTypeText = "text/plain"
-	HeaderContentTypeHtml = "text/html; charset=utf-8"
+	HeaderContentTypeName = "Content-Type"             // Standard Content-Type header name
+	HeaderContentTypeJson = "application/json"         // JSON content type value
+	HeaderContentTypeText = "text/plain"               // Plain text content type value
+	HeaderContentTypeHtml = "text/html; charset=utf-8" // HTML content type with UTF-8 charset
 )
 
-// CookieParams sets a structured way of passing parameteres to the SetCookie method
+// CookieParams provides a structured way of passing parameters to the SetCookie method.
+// It encapsulates all standard cookie attributes in a single structure for convenience.
 type CookieParams struct {
 	Name     string        // Name of the cookie
 	Value    string        // Value of the cookie
@@ -26,32 +30,49 @@ type CookieParams struct {
 	Domain   string        // Domain for which the cookie is valid
 	Secure   bool          // Whether the cookie should be secure (only sent over HTTPS)
 	HttpOnly bool          // Whether the cookie should be HTTP-only (not accessible via JavaScript)
-	SameSite http.SameSite // SameSite attribute for the cookie
+	SameSite http.SameSite // SameSite attribute for the cookie (None, Lax, or Strict)
 }
 
-// Mapping of the default map of a string to any value to custom type
+// M is a type alias for map[string]any, providing a concise way to represent
+// key-value pairs used in JSON responses and template data.
 type M map[string]any
 
-// HttpWriter is a utility struct to handle HTTP responses
-// it helps write response to the http stream more easily
+// HttpWriter is a utility struct that wraps standard http.ResponseWriter and http.Request
+// to provide a more convenient fluent API for writing HTTP responses.
+// It includes methods for writing JSON, HTML, and error responses with chainable calls.
 type HttpWriter struct {
-	W          http.ResponseWriter
-	R          *http.Request
-	StatusCode int
-	BufferSize uint
+	W          http.ResponseWriter // Underlying HTTP response writer
+	R          *http.Request       // Associated HTTP request
+	StatusCode int                 // HTTP status code to use for the response
+	BufferSize uint                // Maximum size of request body in bytes (5MB default)
 }
 
-// Returns a new HttpWriter instance
+// NewHttpWriter creates and returns a new HttpWriter instance.
+// It wraps the standard ResponseWriter and Request objects with additional functionality.
+//
+// Parameters:
+//   - w: Standard HTTP response writer
+//   - r: HTTP request object
+//
+// Returns:
+//   - A configured HttpWriter with default status code and buffer size
 func NewHttpWriter(w http.ResponseWriter, r *http.Request) *HttpWriter {
 	return &HttpWriter{
 		W:          w,               // http.ResponseWriter
 		R:          r,               // *http.Request
 		StatusCode: http.StatusOK,   // Default status code
-		BufferSize: 5 * 1024 * 1024, // Default size of request body 5 MB
+		BufferSize: 5 * 1024 * 1024, // Default size of request body 5 MB (5242880 bytes)
 	}
 }
 
-// Status sets the HTTP status code for the response
+// Status sets the HTTP status code for the response.
+// This method supports method chaining for fluent API usage.
+//
+// Parameters:
+//   - code: HTTP status code (e.g., http.StatusOK, http.StatusBadRequest)
+//
+// Returns:
+//   - The HttpWriter instance for method chaining
 func (hw *HttpWriter) Status(code int) *HttpWriter {
 	hw.StatusCode = code // Set the status code to the struct to use it on chained operations
 
@@ -59,12 +80,22 @@ func (hw *HttpWriter) Status(code int) *HttpWriter {
 	return hw
 }
 
-// Json writes a JSON response to the HTTP response writer
+// Json writes a JSON response to the HTTP response writer.
+// It automatically includes the request ID in the response for traceability.
+//
+// This method:
+// 1. Adds request ID to the response data
+// 2. Marshals the data to JSON
+// 3. Sets appropriate content type and status headers
+// 4. Writes the JSON data to the response
+//
+// Parameters:
+//   - data: Map of data to be serialized as JSON
 func (hw *HttpWriter) Json(data M) {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
-	// Append the request id with the original data
+	// Append the request id with the original data for traceability
 	if r := hw.W.Header().Get("X-Request-ID"); r == "" {
 		data["request_id"] = "unknown"
 	} else {
@@ -96,18 +127,24 @@ func (hw *HttpWriter) Json(data M) {
 	}
 }
 
-// Respond with a HTML template
+// Html renders an HTML template and writes the result to the HTTP response.
+// It loads the template from the filesystem, sets the appropriate content type,
+// and executes the template with the provided data.
 //
 // Parameters:
-//   - view - this is the path to the template to render
-//   - data - this could be any type of data which is to feed to the view while rendering
+//   - view: Path to the HTML template file to render
+//   - data: Data to pass to the template for rendering
 func (hw *HttpWriter) Html(view string, data any) {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
-	// Check if the view path exists or not
-	// then get the template from there
+	// Check if the view path exists and load the template
 	tmp, err := pkg.GetTemplate(view)
+	if err != nil {
+		logger.StdoutLogger.Error("Error loading HTML template", "template", view, "err", err.Error())
+		hw.Status(http.StatusInternalServerError).Text("Error loading template")
+		return
+	}
 
 	// Set content type header - must be set BEFORE WriteHeader
 	hw.W.Header().Set(HeaderContentTypeName, HeaderContentTypeHtml)
@@ -124,7 +161,14 @@ func (hw *HttpWriter) Html(view string, data any) {
 	}
 }
 
-// ParseBody method takes pointer to either a map or a struct
+// ParseBody parses the JSON request body into the provided target struct or map.
+// It validates that the request has a body and the proper Content-Type header.
+//
+// Parameters:
+//   - body: Pointer to a struct or map where the parsed JSON will be stored
+//
+// Returns:
+//   - error: If the request has no body, invalid content type, or parsing fails
 func (hw *HttpWriter) ParseBody(body any) error {
 	// Check if the body is not provided
 	if hw.R.Body == nil {
@@ -149,7 +193,11 @@ func (hw *HttpWriter) ParseBody(body any) error {
 	return nil
 }
 
-// Text writes a TEXT response to the HTTP response writer
+// Text writes a plain text response to the HTTP response writer.
+// It automatically appends the request ID to the response for traceability.
+//
+// Parameters:
+//   - text: The text content to write in the response
 func (hw *HttpWriter) Text(text string) {
 	logger := pkg.NewLogger()
 	defer logger.Close()
@@ -157,7 +205,7 @@ func (hw *HttpWriter) Text(text string) {
 	// Set content type header - must be set BEFORE WriteHeader
 	hw.W.Header().Set(HeaderContentTypeName, HeaderContentTypeText)
 
-	// Append the request id with the response
+	// Append the request id with the response for traceability
 	reqId := hw.W.Header().Get("X-Request-ID")
 	res := strings.Join([]string{text, ("RequestId=" + reqId)}, ";")
 
@@ -172,25 +220,33 @@ func (hw *HttpWriter) Text(text string) {
 	}
 }
 
-// Error writes a Error message to the Http response stream
-// in a more strucutured way
+// Error writes an error response to the HTTP response writer.
+// It sets an appropriate status code and includes the request ID for traceability.
+//
+// Parameters:
+//   - err: The error to include in the response
+//   - status_code: Optional status code to use (defaults to InternalServerError if not specified or invalid)
 func (hw *HttpWriter) Error(err error, status_code ...int) {
 	// Set content type header - must be set BEFORE WriteHeader
 	hw.W.Header().Set(HeaderContentTypeName, HeaderContentTypeText)
 
 	// If no status code is explicitly set, use InternalServerError
 	if hw.StatusCode == http.StatusOK {
-		if status_code[0] < 300 {
-			hw.StatusCode = http.StatusInternalServerError
+		if len(status_code) > 0 {
+			if status_code[0] < 300 {
+				hw.StatusCode = http.StatusInternalServerError
+			} else {
+				hw.StatusCode = status_code[0]
+			}
 		} else {
-			hw.StatusCode = status_code[0]
+			hw.StatusCode = http.StatusInternalServerError
 		}
 	}
 
 	// Write status code
 	hw.W.WriteHeader(hw.StatusCode)
 
-	// Append the request id with the error
+	// Append the request id with the error for traceability
 	reqId := hw.W.Header().Get("X-Request-ID")
 	res := strings.Join([]string{err.Error(), ("\nRequestId=" + reqId + ";")}, ";")
 
@@ -198,17 +254,23 @@ func (hw *HttpWriter) Error(err error, status_code ...int) {
 	hw.W.Write([]byte(res))
 }
 
-// SetCookie sets a cookie in the HTTP response
-// Parameters:
-//   - name - the name of the cookie
-//   - value - the value of the cookie
-//   - maxAge - the maximum age of the cookie in seconds
-//   - path - the path for which the cookie is valid
-//   - domain - the domain for which the cookie is valid
-//   - secure - whether the cookie should be secure (only sent over HTTPS)
-//   - httpOnly - whether the cookie should be HTTP-only (not accessible via JavaScript)
+// SetCookie sets a cookie in the HTTP response using the provided parameters.
+// This method provides a convenient way to set cookies with all common attributes.
 //
-// Use the `CookieParams`
+// Parameters:
+//   - params: CookieParams struct containing all cookie attributes
+//
+// Example usage:
+//
+//	hw.SetCookie(utils.CookieParams{
+//	    Name:     "session",
+//	    Value:    sessionToken,
+//	    MaxAge:   3600,               // 1 hour
+//	    Path:     "/",
+//	    Secure:   true,
+//	    HttpOnly: true,
+//	    SameSite: http.SameSiteLaxMode,
+//	})
 func (hw *HttpWriter) SetCookie(params CookieParams) {
 	cookie := &http.Cookie{
 		Name:     params.Name,
