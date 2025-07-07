@@ -1,5 +1,7 @@
 package pages
 
+import "github.com/dtg-lucifer/everato/components"
+
 templ Header(title string) {
 	<head>
 		<meta charset="UTF-8"/>
@@ -16,10 +18,10 @@ templ Layout(title string) {
 		@Header(title)
 		<body>
 			<div class="container">
-				<header>
-					<h1>{ title }</h1>
+				<header class="w-full">
+					@components.Navbar(title)
 				</header>
-				<main>
+				<main class="min-h-screen">
 					{ children... }
 				</main>
 				<footer>

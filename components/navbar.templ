@@ -1,0 +1,21 @@
+package components
+
+import "strings"
+
+templ Navbar(title string) {
+	<nav class="navbar flex items-center justify-between w-full">
+		<div>
+			<h1 class="fg-secondary font-bold text-xl">
+				// This is to show only the actual page header i.e "Home" instead of "Everato - Home"
+				{ strings.Split(strings.TrimFunc(title, func(r rune) bool {return r == ' '}), "-")[1] }
+			</h1>
+		</div>
+		<ul class="flex items-center space-x-4">
+			<li><a href="/">Home</a></li>
+			<li><a href="/about">About</a></li>
+			<li><a href="/contact">Contact</a></li>
+			<li><a href="/login">Login</a></li>
+			<li><a href="/register">Register</a></li>
+		</ul>
+	</nav>
+}

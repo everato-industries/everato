@@ -64,5 +64,5 @@ func (a *AuthHandler) LoginPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr.Html("templates/pages/login_page.html", utils.M{})
+	wr.Html("pages/login_page.html", utils.M{})
 }

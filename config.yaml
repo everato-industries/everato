@@ -1,0 +1,24 @@
+name: Everato
+version: 1.0.0
+api_prefix: /api/v1
+server:
+    host: 0.0.0.0
+    port: 8000
+    tls:
+        enabled: false
+        cert_file: /path/to/certfile.pem
+        key_file: /path/to/keyfile.pem
+database:
+    host: localhost
+    port: 5432
+    user: piush
+    password: root_access
+    name: everato
+logging: true
+super_users:
+    - username: admin
+      password: admin123
+      email: admin@everato.org
+      permissions:
+          - MANAGE_USERS
+          - MANAGE_EVENTS

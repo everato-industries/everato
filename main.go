@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dtg-lucifer/everato/config"
@@ -12,10 +13,12 @@ func main() {
 		log.Println("Error loading .env file")
 	}
 
-	cfg, err := config.Load()
+	cfg, err := config.NewConfig("config.yaml")
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
+
+	fmt.Printf("Loaded config: %#v\n", cfg)
 
 	server := NewServer(cfg)
 

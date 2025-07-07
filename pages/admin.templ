@@ -1,0 +1,27 @@
+package admin
+
+import "strings"
+
+templ AdminPanel(title string) {
+	<div class="admin-panel">
+		<nav class="navbar flex items-center justify-between w-full">
+			<div>
+				<h1 class="fg-secondary font-bold text-xl">
+					{ strings.Split(strings.TrimFunc(title, func(r rune) bool { return r == ' ' }), "-")[1] }
+				</h1>
+			</div>
+			<ul class="flex items-center space-x-4">
+				<li><a href="/admin/dashboard">Dashboard</a></li>
+				<li><a href="/admin/users">Users</a></li>
+				<li><a href="/admin/settings">Settings</a></li>
+				<li><a href="/admin/logout">Logout</a></li>
+			</ul>
+		</nav>
+		<main class="p-4">
+			{ children... }
+		</main>
+		<footer class="text-center p-4">
+			<p class="text-sm text-gray-500">© 2023 Everato Admin Panel</p>
+		</footer>
+	</div>
+}
