@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
@@ -44,32 +43,32 @@ func (s *Server) initializeMiddlewares() {
 	s.Router.Use(middlewares.LoggerMiddleware)
 
 	// Add a 30 second timeout to all of the routes
-	s.Router.Use(middlewares.TimeoutMiddleware(time.Second * 10))
+	s.Router.Use(middlewares.TimeoutMiddleware(s.Cfg.RequestTimeout))
 }
 
 func (s *Server) initializeRoutes() {
 	// Setting up the API prefix
-	apiv1 := s.Router.PathPrefix("/api/v1").Subrouter()
+	apivx := s.Router.PathPrefix(s.Cfg.ApiPrefix).Subrouter()
 
 	// Route Group:
 	// 	- General
-	api.NewHealthCheckHandler().RegisterRoutes(apiv1)
-	api.NewMetricsHandler().RegisterRoutes(apiv1)
+	api.NewHealthCheckHandler().RegisterRoutes(apivx)
+	api.NewMetricsHandler().RegisterRoutes(apivx)
 
 	// Route Group:
 	// 	- Authentication
-	api.NewAuthHandler().RegisterRoutes(apiv1)
+	api.NewAuthHandler().RegisterRoutes(apivx)
 
 	// Route Group:
 	// 	- Events
-	api.NewEventHandler().RegisterRoutes(apiv1)
+	api.NewEventHandler().RegisterRoutes(apivx)
 
 	// @TODO: User routes
 	// @TODO: Ticket routes
 	// @TODO: Notification routes
 
 	// Notfound handler
-	api.NewNotFoundHandler().RegisterRoutes(apiv1)
+	api.NewNotFoundHandler().RegisterRoutes(apivx)
 }
 
 func (s *Server) initializeStaticFS() {

@@ -1,6 +1,7 @@
 name: Everato
 version: 1.0.0
 api_prefix: /api/v1
+req_timeout: 15s
 server:
     host: 0.0.0.0
     port: 8000

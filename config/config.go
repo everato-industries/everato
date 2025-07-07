@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -8,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Name        string      `yaml:"name"`
-	Version     string      `yaml:"version"`
-	ApiPrefix   string      `yaml:"api_prefix"`
-	Logging     bool        `yaml:"logging"`
-	Server      Server      `yaml:"server"`
-	DataBase    DataBase    `yaml:"database"`
-	SupserUsers []SuperUser `yaml:"super_users"`
+	Name           string      `yaml:"name"`
+	Version        string      `yaml:"version"`
+	ApiPrefix      string      `yaml:"api_prefix"`
+	Logging        bool        `yaml:"logging"`
+	RequestTimeout string      `yaml:"req_timeout"`
+	Server         Server      `yaml:"server"`
+	DataBase       DataBase    `yaml:"database"`
+	SupserUsers    []SuperUser `yaml:"super_users"`
 }
 
 type SuperUser struct {
@@ -71,4 +73,14 @@ func NewConfig(path string) (*Config, error) {
 	}
 
 	return config, nil
+}
+
+// PrettyPrint prints the given value in a pretty JSON format.
+func PrettyPrint(v any) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(string(b))
 }

@@ -6,9 +6,18 @@ import (
 	"time"
 
 	"github.com/dtg-lucifer/everato/internal/utils"
+	"github.com/dtg-lucifer/everato/pkg"
 )
 
-func TimeoutMiddleware(duration time.Duration) func(http.Handler) http.Handler {
+func TimeoutMiddleware(time_str string) func(http.Handler) http.Handler {
+	duration, err := time.ParseDuration(time_str)
+	if err != nil {
+		// If the duration string is invalid, default to 30 seconds
+		logger := pkg.NewLogger()
+		logger.Error("Invalid time string passed into timeout middleware, fallig back to", "timeout", "10s")
+		duration = 10 * time.Second
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx, cancel := context.WithTimeout(r.Context(), duration)
