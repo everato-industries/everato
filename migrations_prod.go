@@ -27,11 +27,11 @@ import (
 // It uses migration files embedded in the binary for production environments.
 //
 // This function:
-// 1. Gets the embedded migrations filesystem
-// 2. Creates a source driver from the embedded migrations
-// 3. Establishes a database connection
-// 4. Creates a database driver for migrations
-// 5. Runs all pending migrations
+//  1. Gets the embedded migrations filesystem
+//  2. Creates a source driver from the embedded migrations
+//  3. Establishes a database connection
+//  4. Creates a database driver for migrations
+//  5. Runs all pending migrations
 //
 // Parameters:
 //   - cfg: Application configuration containing database connection details
