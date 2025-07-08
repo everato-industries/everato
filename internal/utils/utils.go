@@ -1,3 +1,5 @@
+// Package utils provides utility functions for the Everato application.
+// It includes helpers for environment variables, data type conversions, and string manipulation.
 package utils
 
 import (
@@ -9,8 +11,14 @@ import (
 )
 
 // GetEnv retrieves the value of the environment variable named by key.
-// if the value is not set in the environment
-// then it returns the default value it was passed to
+// If the value is not set in the environment, it returns the provided default value.
+//
+// Parameters:
+//   - key: The name of the environment variable to retrieve
+//   - d_val: The default value to return if the environment variable is not set
+//
+// Returns:
+//   - The value of the environment variable, or the default value if not set
 func GetEnv(key, d_val string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
@@ -19,10 +27,15 @@ func GetEnv(key, d_val string) string {
 	return d_val
 }
 
-// This method accepts a string value of an UUID
-// then tries to parse that into an actual UUID
+// StringToUUID converts a string representation of a UUID to a pgtype.UUID type.
+// This is useful for converting UUID strings from requests to database-compatible types.
 //
-// returns error with empty UUID or nil with parsed UUID
+// Parameters:
+//   - s: The string representation of a UUID (e.g., "550e8400-e29b-41d4-a716-446655440000")
+//
+// Returns:
+//   - A pgtype.UUID object if successful
+//   - An error if the string cannot be parsed as a valid UUID
 func StringToUUID(s string) (pgtype.UUID, error) {
 	uuid := pgtype.UUID{}
 	err := uuid.Scan(s)
@@ -36,11 +49,15 @@ func StringToUUID(s string) (pgtype.UUID, error) {
 	return uuid, nil
 }
 
-// This method accepts a string value of a time
-// in RFC3339 / ISO 8061 format
-// then tries to parse that into an actual time
+// StringToTime converts a string representation of time in RFC3339/ISO8601 format
+// to a pgtype.Timestamptz type for use with PostgreSQL.
 //
-// returns error with empty Timestampz or nil with parsed Timestampz
+// Parameters:
+//   - s: The string representation of time (e.g., "2023-04-01T15:30:00Z")
+//
+// Returns:
+//   - A pgtype.Timestamptz object if successful
+//   - An error if the string cannot be parsed as a valid timestamp
 func StringToTime(s string) (pgtype.Timestamptz, error) {
 	t := pgtype.Timestamptz{}
 	err := t.Scan(s)
@@ -54,7 +71,15 @@ func StringToTime(s string) (pgtype.Timestamptz, error) {
 	return t, nil
 }
 
-// Returns a pgtype.Text version of this string
+// StringToText converts a string to a pgtype.Text value for PostgreSQL compatibility.
+// This is useful when passing strings to database queries that expect text types.
+//
+// Parameters:
+//   - s: The string to convert
+//
+// Returns:
+//   - A pgtype.Text object representing the string
+//   - An error if conversion fails
 func StringToText(s string) (pgtype.Text, error) {
 	t := pgtype.Text{}
 
@@ -68,12 +93,18 @@ func StringToText(s string) (pgtype.Text, error) {
 	return t, nil
 }
 
-// This method accepts the title of an event and generates a slug based on that
+// GenerateSlug creates a URL-friendly slug from a given title string.
+// The generated slug follows these rules:
+// 1. It is converted to lowercase
+// 2. Spaces are replaced with underscores
+// 3. Only alphanumeric characters and underscores are retained
 //
-// There are some rules for the slug:
-// // 1. It should be lower case
-// // 2. It should be unique
-// // It returns the slug as a string or an error if it fails to generate
+// Parameters:
+//   - title: The original title to convert to a slug
+//
+// Returns:
+//   - The generated slug string if successful
+//   - An error if the resulting slug would be empty (e.g., title contains only special characters)
 func GenerateSlug(title string) (string, error) {
 	// Convert the title to lower case
 	title_lower := strings.ToLower(title)

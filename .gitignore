@@ -1,4 +1,5 @@
 .env*
+!.env.example
 bin/
 logs/
 **/pgdata

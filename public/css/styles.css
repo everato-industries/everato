@@ -177,6 +177,9 @@
   .visible {
     visibility: visible;
   }
+  .absolute {
+    position: absolute;
+  }
   .static {
     position: static;
   }

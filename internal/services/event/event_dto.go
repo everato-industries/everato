@@ -1,3 +1,5 @@
+// Package event provides services for event management in the Everato platform.
+// It handles the creation, updating, deletion, and querying of events.
 package event
 
 import (
@@ -8,47 +10,75 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// Location ENUM provides the valid options for creating an event
+// Location constants define the valid location types for events
+// These are used to validate location input and provide consistent options
 const (
-	LocationOnline   = "online"    // ONLINE, i.e. event organisation is TODO
-	LocationInPerson = "in-person" // IN-PERSON
+	LocationOnline   = "online"    // Online/virtual events held remotely
+	LocationInPerson = "in-person" // Physical events held at a specific venue
 )
 
-// CreateEventDTO represents the data transfer object for creating a new event
+// CreateEventDTO represents the data transfer object for creating a new event.
+// It handles the JSON deserialization and validation of event creation requests.
 //
-// This will also include some additional functionalities
-// i.e.
-//   - parsing the raw request body to the DTO object it self
-//   - transforming the string UUID to a pgtype.UUID format
-//
-// and etc.
+// This DTO provides several key functions:
+//   - Defines the structure for incoming JSON event data
+//   - Specifies validation rules for each field
+//   - Provides methods to convert the validated data to repository formats
+//   - Transforms string representations to appropriate database types (UUIDs, timestamps)
 type CreateEventDTO struct {
-	Title          string `json:"title" validate:"required,min=2,max=100"`             // Name of the event
-	Description    string `json:"description" validate:"required,min=10,max=500"`      // Description of the event
-	StartTime      string `json:"start_time" validate:"required,datetime"`             // Start time of the event, ISO 8061 format
-	EndTime        string `json:"end_time" validate:"required,datetime"`               // End time of the event, ISO 8061 format
-	Location       string `json:"location" validate:"required,min=2,max=100"`          // Location of the event, i.e it can be online or in-person
-	AdminID        string `json:"admin_id" validate:"required,uuid"`                   // UUID format for admin ID
-	BannerURL      string `json:"banner_url" validate:"omitempty,url"`                 // Optional URL for event banner
-	IconURL        string `json:"icon_url" validate:"omitempty,url"`                   // Optional URL for event icon
-	TotalSeats     int    `json:"total_seats" validate:"required,min=1,max=10000"`     // Total number of seats available for the event
-	AvailableSeats int    `json:"available_seats" validate:"required,min=0,max=10000"` // Number of seats available for booking
+	Title          string `json:"title" validate:"required,min=2,max=100"`             // Event title (2-100 chars)
+	Description    string `json:"description" validate:"required,min=10,max=500"`      // Event description (10-500 chars)
+	StartTime      string `json:"start_time" validate:"required,datetime"`             // Event start time in ISO 8601 format
+	EndTime        string `json:"end_time" validate:"required,datetime"`               // Event end time in ISO 8601 format
+	Location       string `json:"location" validate:"required,min=2,max=100"`          // Event location (online or in-person)
+	AdminID        string `json:"admin_id" validate:"required,uuid"`                   // UUID of the event administrator
+	BannerURL      string `json:"banner_url" validate:"omitempty,url"`                 // Optional URL to event banner image
+	IconURL        string `json:"icon_url" validate:"omitempty,url"`                   // Optional URL to event icon image
+	TotalSeats     int    `json:"total_seats" validate:"required,min=1,max=10000"`     // Total capacity of the event (1-10000)
+	AvailableSeats int    `json:"available_seats" validate:"required,min=0,max=10000"` // Initially available seats for booking
 }
 
-// Custom datetime validator
+// time_parser is a custom validator function for validating datetime strings.
+// It ensures that date/time fields conform to RFC3339/ISO8601 format.
+//
+// Parameters:
+//   - fl: The validator's field level with access to the field being validated
+//
+// Returns:
+//   - true if the string can be parsed as a valid RFC3339 timestamp, false otherwise
 func time_parser(fl validator.FieldLevel) bool {
 	_, err := time.Parse(time.RFC3339, fl.Field().String())
 	return err == nil
 }
 
-// Custome UUID validator
+// uuid_parser is a custom validator function for validating UUID strings.
+// It ensures that UUID fields contain valid UUID format strings.
+//
+// Parameters:
+//   - fl: The validator's field level with access to the field being validated
+//
+// Returns:
+//   - true if the string can be parsed as a valid UUID, false otherwise
 func uuid_parser(fl validator.FieldLevel) bool {
 	_, err := utils.StringToUUID(fl.Field().String())
 	return err == nil
 }
 
 // Validate checks the CreateEventDTO for required fields and formats.
-// it returns an error if there is some issue with the data
+// It registers and applies custom validators for datetime and UUID fields,
+// then performs full validation of the DTO structure.
+//
+// The validation ensures:
+// - All required fields are present
+// - String lengths are within specified bounds
+// - Dates are in proper RFC3339 format
+// - UUIDs are valid
+// - URLs are properly formatted
+// - Numerical ranges are appropriate
+//
+// Returns:
+//   - nil if validation passes
+//   - A validation error detailing which fields failed validation and why
 func (c CreateEventDTO) Validate() error {
 	v := validator.New(validator.WithRequiredStructEnabled())
 	_ = v.RegisterValidation("datetime", time_parser) // Register custom datetime validator
@@ -56,13 +86,26 @@ func (c CreateEventDTO) Validate() error {
 	return v.Struct(c)
 }
 
-// ToCreateEventParams converts the CreateEventDTO to a CreateEventParams for database operations.
+// ToCreateEventParams converts the validated CreateEventDTO to a CreateEventParams struct
+// for database operations. This method transforms the DTO's string and primitive types
+// into the PostgreSQL-specific types required by the repository.
+//
+// The method performs the following conversions:
+// - String timestamps to pgtype.Timestamptz
+// - String location to pgtype.Text
+// - String UUID to pgtype.UUID
+// - Integer seat counts to int32 (PostgreSQL integer)
+//
+// Note: This method assumes validation has already been performed, so it ignores
+// potential errors from the conversion functions.
+//
+// Returns:
+//   - A repository.CreateEventParams struct ready for database insertion
 func (c CreateEventDTO) ToCreateEventParams() repository.CreateEventParams {
-
-	start_time, _ := utils.StringToTime(c.StartTime) // Parse to time
-	end_time, _ := utils.StringToTime(c.EndTime)     // Parse to time
-	location, _ := utils.StringToText(c.Location)    // Parse to text
-	adminUUID, _ := utils.StringToUUID(c.AdminID)    // Parse to UUID
+	start_time, _ := utils.StringToTime(c.StartTime) // Convert ISO8601 string to PostgreSQL timestamp
+	end_time, _ := utils.StringToTime(c.EndTime)     // Convert ISO8601 string to PostgreSQL timestamp
+	location, _ := utils.StringToText(c.Location)    // Convert string to PostgreSQL text
+	adminUUID, _ := utils.StringToUUID(c.AdminID)    // Convert string to PostgreSQL UUID
 
 	return repository.CreateEventParams{
 		Title:          c.Title,
