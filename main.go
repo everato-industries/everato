@@ -7,9 +7,8 @@ It initializes configuration, runs database migrations, and starts the HTTP serv
 package main
 
 import (
-	"log"
-
 	"github.com/dtg-lucifer/everato/config"
+	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/joho/godotenv"
 )
 
@@ -19,34 +18,45 @@ import (
 // 3. Runs database migrations to ensure schema is up-to-date
 // 4. Initializes and starts the HTTP server
 func main() {
+	logger := pkg.NewLogger()
 	// Load environment variables from .env file
 	// Continues execution even if .env file is not found
 	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
+		logger.Error("Error loading the .env file, falling back to config.yaml and local env")
 	}
 
 	// Load application configuration
 	cfg, err := config.NewConfig("config.yaml")
 	if err != nil {
-		log.Fatalf("Error loading configuration: %v", err)
+		logger.Error("Error loading configuration", "err", err.Error())
+		panic(err)
 	}
 
 	// Print the configuration for debugging purposes
-	log.Println("Configuration loaded successfully:")
+	logger.Info("Configuration loaded successfully:")
 	config.PrettyPrint(cfg)
 
 	// Run database migrations to ensure schema is up-to-date
-	log.Println("Running migrations...")
+	logger.Info("Running migrations...")
 	if err := MigrateDB(cfg); err != nil {
-		log.Fatalf("Error running migrations: %v", err)
+		logger.Error("Error running migrations", "err", err.Error())
+		panic(err)
 	}
-	log.Println("Migrations completed successfully...")
+	logger.Info("Migrations completed successfully...")
+
+	// Insert the super users data in the database
+	if err := SuperUserInit(cfg); err != nil {
+		logger.Error("Error initializing super users", "err", err.Error())
+		panic(err)
+	}
+	logger.Info("Super users initialized successfully...")
 
 	// Initialize and configure the HTTP server
 	server := NewServer(cfg)
 
 	// Start the HTTP server - this call is blocking
 	if err := server.Start(); err != nil {
-		log.Fatalf("Error starting server: %v", err)
+		logger.Error("Error starting the server", "err", err.Error())
+		panic(err)
 	}
 }

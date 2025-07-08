@@ -144,6 +144,101 @@ func (ns NullPaymentType) Value() (driver.Value, error) {
 	return string(ns.PaymentType), nil
 }
 
+type Permissions string
+
+const (
+	PermissionsMANAGEEVENTS   Permissions = "MANAGE_EVENTS"
+	PermissionsCREATEEVENT    Permissions = "CREATE_EVENT"
+	PermissionsEDITEVENT      Permissions = "EDIT_EVENT"
+	PermissionsDELETEEVENT    Permissions = "DELETE_EVENT"
+	PermissionsVIEWEVENT      Permissions = "VIEW_EVENT"
+	PermissionsMANAGEBOOKINGS Permissions = "MANAGE_BOOKINGS"
+	PermissionsCREATEBOOKING  Permissions = "CREATE_BOOKING"
+	PermissionsEDITBOOKING    Permissions = "EDIT_BOOKING"
+	PermissionsDELETEBOOKING  Permissions = "DELETE_BOOKING"
+	PermissionsVIEWBOOKING    Permissions = "VIEW_BOOKING"
+	PermissionsMANAGEUSERS    Permissions = "MANAGE_USERS"
+	PermissionsVIEWREPORTS    Permissions = "VIEW_REPORTS"
+)
+
+func (e *Permissions) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Permissions(s)
+	case string:
+		*e = Permissions(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Permissions: %T", src)
+	}
+	return nil
+}
+
+type NullPermissions struct {
+	Permissions Permissions
+	Valid       bool // Valid is true if Permissions is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPermissions) Scan(value interface{}) error {
+	if value == nil {
+		ns.Permissions, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Permissions.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPermissions) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Permissions), nil
+}
+
+type SuperUserRole string
+
+const (
+	SuperUserRoleSUPERADMIN SuperUserRole = "SUPER_ADMIN"
+	SuperUserRoleADMIN      SuperUserRole = "ADMIN"
+	SuperUserRoleEDITOR     SuperUserRole = "EDITOR"
+)
+
+func (e *SuperUserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SuperUserRole(s)
+	case string:
+		*e = SuperUserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SuperUserRole: %T", src)
+	}
+	return nil
+}
+
+type NullSuperUserRole struct {
+	SuperUserRole SuperUserRole
+	Valid         bool // Valid is true if SuperUserRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSuperUserRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.SuperUserRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SuperUserRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSuperUserRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SuperUserRole), nil
+}
+
 type TicketStatus string
 
 const (
@@ -235,6 +330,17 @@ type Payment struct {
 	EventID  pgtype.UUID
 	UserID   pgtype.UUID
 	TicketID pgtype.UUID
+}
+
+type SuperUser struct {
+	ID          pgtype.UUID
+	Email       string
+	Password    string
+	Role        SuperUserRole
+	Permissions []Permissions
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	Username    string
 }
 
 type Ticket struct {

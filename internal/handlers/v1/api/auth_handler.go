@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/services/user"
@@ -34,6 +35,7 @@ type AuthHandler struct {
 	Repo     *repository.Queries // Database repository for user operations
 	Conn     *pgx.Conn           // Database connection
 	BasePath string              // Base URL path for auth endpoints
+	Cfg      *config.Config      // Application configuration
 }
 
 // Asserting the implementation of the handler interface
@@ -45,7 +47,7 @@ var _ handlers.Handler = (*AuthHandler)(nil)
 // Returns:
 //   - A fully initialized AuthHandler, or a partially initialized handler if DB connection fails
 //     (in which case the Repo field will be nil)
-func NewAuthHandler() *AuthHandler {
+func NewAuthHandler(cfg *config.Config) *AuthHandler {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
@@ -68,6 +70,7 @@ func NewAuthHandler() *AuthHandler {
 		Repo:     repo,
 		Conn:     conn,
 		BasePath: "/auth",
+		Cfg:      cfg,
 	}
 }
 
@@ -113,7 +116,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new user in the database
-	user.CreateUser(wr, h.Repo, h.Conn)
+	user.CreateUser(wr, h.Repo, h.Conn, h.Cfg)
 }
 
 // Login authenticates a user and returns a JWT token.
