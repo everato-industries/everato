@@ -21,7 +21,7 @@ type Config struct {
 	RequestTimeout string      `yaml:"req_timeout"` // Maximum request timeout duration (e.g., "15s")
 	Server         Server      `yaml:"server"`      // Server-specific configuration
 	DataBase       DataBase    `yaml:"database"`    // Database connection configuration
-	SupserUsers    []SuperUser `yaml:"super_users"` // List of predefined super users
+	SuperUsers     []SuperUser `yaml:"super_users"` // List of predefined super users
 }
 
 // SuperUser represents a predefined administrative user with elevated permissions.

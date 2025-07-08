@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
@@ -19,13 +20,14 @@ type EventHandler struct {
 	Repo     *repository.Queries
 	Conn     *pgx.Conn
 	BasePath string
+	Cfg      *config.Config
 }
 
 // -----------------------------------------------------
 var _ handlers.Handler = (*EventHandler)(nil) // Assert the interface implementation to catch errors
 // -----------------------------------------------------
 
-func NewEventHandler() *EventHandler {
+func NewEventHandler(cfg *config.Config) *EventHandler {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
@@ -45,6 +47,7 @@ func NewEventHandler() *EventHandler {
 		Repo:     repo,
 		Conn:     conn,
 		BasePath: "/events",
+		Cfg:      cfg,
 	}
 }
 

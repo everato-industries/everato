@@ -16,6 +16,10 @@ type CreateUserDTO struct {
 	LastName string `json:"last_name" validate:"required,min=2,max=50"`  // User's last name (2-50 chars)
 	Email    string `json:"email" validate:"required,email"`             // User's email address (must be valid format)
 	Password string `json:"password" validate:"required,min=8,max=100"`  // User's password (8-100 chars)
+
+	AdminUsername *string `json:"admin_username" validate:"omitempty,min=2,max=50"` // Optional admin username for user creation
+	AdminEmail    *string `json:"admin_email" validate:"omitempty,email"`           // Optional admin email for user creation
+	AdminPassword *string `json:"admin_password" validate:"omitempty,min=8"`        // Optional admin password for user creation
 }
 
 // LoginUserDTO represents the data transfer object for user login.

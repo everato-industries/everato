@@ -18,7 +18,7 @@ database:
 logging: true
 super_users:
     - username: admin
-      password: admin123
+      password: root_admin_1234
       email: admin@everato.org
       permissions:
           - MANAGE_USERS
