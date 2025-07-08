@@ -17,6 +17,8 @@ Thank you for considering contributing to Everato! This document provides guidel
 
 ## Development Environment Setup
 
+> 💡 **Tip:** Keep a lookout for the project tab of the repository so that you can see the latest updates and and todos to be done and issues to be resolved about the project. Also feel free to add your own issues and todos to the project tab so that you can keep track of your work and others can see what you are working on.
+
 Follow these steps to set up your development environment for Everato:
 
 1. **Fork the repository**: Create a personal copy of the Everato repository on GitHub.
