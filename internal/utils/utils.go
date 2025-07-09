@@ -3,11 +3,14 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // GetEnv retrieves the value of the environment variable named by key.
@@ -125,4 +128,40 @@ func GenerateSlug(title string) (string, error) {
 	}
 
 	return slug, nil
+}
+
+// Sha256 computes the SHA256 hash of a given string and returns its hexadecimal representation.
+//
+// Parameters:
+//   - String to be hashed
+//
+// Returns:
+//   - Hashed version of the string it had
+func Sha256(s string) string {
+	// Create a new SHA256 hash
+	h := sha256.New()
+
+	// Write the string to the hash
+	h.Write([]byte(s))
+
+	// Return the hex representation of the hash
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// BcryptHash hashes a string using bcrypt and returns the hashed value.
+//
+// Parameters:
+//   - String to hash
+//
+// Returns:
+//   - Generated hash or and empty string in case of error
+//   - Nil or the error in case of error
+func BcryptHash(s string) (string, error) {
+	// Hash the password using bcrypt
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hashedPassword), nil
 }

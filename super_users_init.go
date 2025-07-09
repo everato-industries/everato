@@ -39,12 +39,21 @@ func SuperUserInit(cfg *config.Config) error {
 
 	for _, su := range cfg.SuperUsers {
 		logger.StdoutLogger.Info("Adding user with following details", "username", su.UserName, "email", su.Email)
+
+		// hash the password before saving into db
+		hashedPassword, err := utils.BcryptHash(su.Password)
+		if err != nil {
+			logger.StdoutLogger.Error("Error hashing password", "err", err.Error(), "email", su.Email)
+			tx.Rollback(context.Background())
+			return err
+		}
+
 		_, err = repo.WithTx(tx).CreateSuperUserIfNotExists(
 			context.Background(),
 			repository.CreateSuperUserIfNotExistsParams{
 				Column1: su.UserName,
 				Column2: su.Email,
-				Column3: su.Password,
+				Column3: hashedPassword,
 			},
 		)
 		if err != nil {
