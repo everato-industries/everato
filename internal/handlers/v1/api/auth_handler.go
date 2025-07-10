@@ -10,7 +10,6 @@ import (
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/services/user"
-	userService "github.com/dtg-lucifer/everato/internal/services/user"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
@@ -226,7 +225,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	// Delegate token refresh logic to the user service
 	// This separates route handling from business logic for better maintainability
-	userService.RefreshUserToken(wr, h.Repo, r)
+	user.RefreshUserToken(wr, h.Repo, r)
 }
 
 // ResetPassword initiates the password reset process.
@@ -268,3 +267,4 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // 	// 5. Invalidate used token
 // 	// 6. Notify user of successful password change
 // }
+
