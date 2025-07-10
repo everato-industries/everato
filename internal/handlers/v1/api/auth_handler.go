@@ -9,6 +9,7 @@ import (
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/services/user"
+	userService "github.com/dtg-lucifer/everato/internal/services/user"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
@@ -64,11 +65,17 @@ func NewAuthHandler() *AuthHandler {
 	// Initialize the repository with the database connection
 	repo := repository.New(conn)
 
-	return &AuthHandler{
+	handler := &AuthHandler{
 		Repo:     repo,
 		Conn:     conn,
 		BasePath: "/auth",
 	}
+	// Ensure sub-admin exists
+	err = handler.EnsureSubAdminExists()
+	if err != nil {
+		logger.StdoutLogger.Error("Failed to ensure sub-admin exists", "err", err.Error())
+	}
+	return handler
 }
 
 // RegisterRoutes registers all authentication routes with the provided router.
@@ -79,41 +86,62 @@ func NewAuthHandler() *AuthHandler {
 func (h *AuthHandler) RegisterRoutes(router *mux.Router) {
 	auth_router := router.PathPrefix(h.BasePath).Subrouter()
 
-	auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
-	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)                    // Login an existing user (returning the jwt token)
-	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodGet)        // Verify the user's email address
-	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)                // Refresh the JWT token @TODO
-	auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)   // Reset the user's password @TODO
-	auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost) // Change the user's password @TODO
+	//auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
+	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)             // Login an existing user (returning the jwt token)
+	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodGet) // Verify the user's email address
+	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)         // Refresh the JWT token @TODO
+	//auth_router.HandleFunc("/reset-password", h.ResetPassword).Methods(http.MethodPost)   // Reset the user's password @TODO
+	//auth_router.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost) // Change the user's password @TODO
 }
 
-// Register handles new user registration.
-// It creates a new user account and sends a verification email.
+// EnsureSubAdminExists creates a default administrative user if one doesn't already exist.
+// This method is called during handler initialization to guarantee there's always an admin user
+// available for system access, even in a fresh installation.
 //
-// HTTP Method: POST
-// Route: /api/v1/auth/register
+// The method performs the following operations:
+// 1. Checks if a user with the predefined email already exists
+// 2. If the user exists, returns without taking action
+// 3. If the user doesn't exist, creates a new user with admin credentials
+// 4. Validates and hashes the password before storing in the database
 //
-// Request body: JSON with user registration details
-// Response:
-//   - 201 Created on success with user details
-//   - 400 Bad Request if request data is invalid
-//   - 409 Conflict if email already exists
-//   - 502 Bad Gateway if database connection fails
-func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	wr := utils.NewHttpWriter(w, r)
+// Returns:
+//   - nil if the admin user exists or was successfully created
+//   - An error if user creation fails (validation, hashing, or database errors)
+func (h *AuthHandler) EnsureSubAdminExists() error {
+	email := "piush@yoyo.com"
+	password := "yoyopanukhor"
+	firstName := "Piush"
+	lastName := "Sexy"
 
-	// If no repo is set then there must be a error, to be sure ABORT!
-	if h.Repo == nil {
-		wr.Status(http.StatusBadGateway).Json(
-			utils.M{
-				"message": "BAD_GATEWAY, No database connection, Oops!",
-			},
-		)
-		return
+	// Check if the user already exists in the database
+	// If the user exists and has a valid ID, no action needed
+	existingUser, err := h.Repo.GetUserByEmail(context.Background(), email)
+	if err == nil && existingUser.ID.Valid {
+		return nil
 	}
 
-	// Create a new user in the database
-	user.CreateUser(wr, h.Repo, h.Conn)
+	// Create a new user DTO with admin credentials
+	// This will be used to validate and create the user
+	userDTO := &user.CreateUserDTO{
+		FistName: firstName,
+		LastName: lastName,
+		Email:    email,
+		Password: password,
+	}
+	// Validate the user data to ensure it meets requirements
+	if err := userDTO.Validate(); err != nil {
+		return err
+	}
+
+	// Hash the password for secure storage
+	if err := userDTO.HashPassword(); err != nil {
+		return err
+	}
+
+	// Convert DTO to repository parameters for database operation
+	params := userDTO.ToCreteUserParams()
+	_, err = h.Repo.CreateUser(context.Background(), params)
+	return err
 }
 
 // Login authenticates a user and returns a JWT token.
@@ -182,12 +210,20 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 // Response:
 //   - 200 OK with new token pair on success
 //   - 401 Unauthorized if refresh token is invalid
+//   - 502 Bad Gateway if database connection fails
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement token refresh logic here
-	// 1. Extract refresh token from request
-	// 2. Validate refresh token
-	// 3. Generate new access token with updated expiration
-	// 4. Return new token pair
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	// This ensures the handler can't proceed without a valid database connection
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(utils.M{"message": "BAD_GATEWAY, No database connection, Oops!"})
+		return
+	}
+
+	// Delegate token refresh logic to the user service
+	// This separates route handling from business logic for better maintainability
+	userService.RefreshUserToken(wr, h.Repo, r)
 }
 
 // ResetPassword initiates the password reset process.
@@ -201,31 +237,31 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 //   - 200 OK if reset email was sent successfully
 //   - 404 Not Found if email doesn't match any user
 //   - 500 Internal Server Error if email sending fails
-func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement password reset logic here
-	// 1. Validate email address
-	// 2. Generate reset token
-	// 3. Store token in database with expiration
-	// 4. Send reset email with token link
-}
+// func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+// 	// TODO: Implement password reset logic here
+// 	// 1. Validate email address
+// 	// 2. Generate reset token
+// 	// 3. Store token in database with expiration
+// 	// 4. Send reset email with token link
+// }
 
-// ChangePassword handles password change requests.
-// It validates the reset token and updates the user's password.
-//
-// HTTP Method: POST
-// Route: /api/v1/auth/change-password
-//
-// Request: JSON with reset token and new password
-// Response:
-//   - 200 OK if password was changed successfully
-//   - 400 Bad Request if password doesn't meet requirements
-//   - 401 Unauthorized if reset token is invalid or expired
-func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement password change logic here
-	// 1. Validate reset token
-	// 2. Validate new password meets requirements
-	// 3. Hash the new password
-	// 4. Update password in database
-	// 5. Invalidate used token
-	// 6. Notify user of successful password change
-}
+// // ChangePassword handles password change requests.
+// // It validates the reset token and updates the user's password.
+// //
+// // HTTP Method: POST
+// // Route: /api/v1/auth/change-password
+// //
+// // Request: JSON with reset token and new password
+// // Response:
+// //   - 200 OK if password was changed successfully
+// //   - 400 Bad Request if password doesn't meet requirements
+// //   - 401 Unauthorized if reset token is invalid or expired
+// func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+// 	// TODO: Implement password change logic here
+// 	// 1. Validate reset token
+// 	// 2. Validate new password meets requirements
+// 	// 3. Hash the new password
+// 	// 4. Update password in database
+// 	// 5. Invalidate used token
+// 	// 6. Notify user of successful password change
+// }

@@ -130,18 +130,12 @@ func LoginUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 	duration := utils.GetEnv("JWT_EXPIRATION", "12h")
 	exp, err := time.ParseDuration(duration)
 	if err != nil {
-		logger.StdoutLogger.Error(
-			"Error parsing JWT expiration duration",
+		logger.StdoutLogger.Warn(
+			"Invalid JWT_EXPIRATION, falling back to 12h",
+			"provided", duration,
 			"err", err.Error(),
-			"requestId", wr.R.Header.Get("X-Request-ID"),
 		)
-		wr.Status(http.StatusInternalServerError).Json(
-			utils.M{
-				"error":   "Internal server error",
-				"message": "Failed to parse JWT expiration duration",
-			},
-		)
-		return
+		exp = 12 * time.Hour
 	}
 
 	// Calculate absolute expiration time from now
