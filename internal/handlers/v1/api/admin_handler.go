@@ -86,7 +86,7 @@ func (h *AdminHandler) RegisterRoutes(r *mux.Router) {
 	router.HandleFunc("/{id}", h.DeleteAdmin).Methods(http.MethodDelete)                           // Delete an admin by ID
 	router.HandleFunc("/all", h.GetAllAdmins).Methods(http.MethodGet)                              // Get all admins
 	router.HandleFunc("/{id}", h.GetAdminByID).Methods(http.MethodGet)                             // Get admin by ID
-	router.HandleFunc("/u/{username}", h.GetAdminByID).Methods(http.MethodGet)                     // Get admin by username
+	router.HandleFunc("/u/{username}", h.GetAdminByUserName).Methods(http.MethodGet)               // Get admin by username
 	router.HandleFunc("/{query}", h.SearchAdminByQeury).Methods(http.MethodGet)                    // Search admin by query
 }
 
@@ -111,4 +111,108 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	admin.Login(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the creation of a new admin account
+func (h *AdminHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.CreateAdmin(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the update of an existing admin account
+func (h *AdminHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.UpdateAdmin(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles sending a verification email to an admin account
+func (h *AdminHandler) SendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.SendVerificationEmail(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the deletion of an admin account
+func (h *AdminHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.DeleteAdmin(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the retrieval of all admin accounts
+func (h *AdminHandler) GetAllAdmins(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.GetAllAdmins(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the retrieval of a single admin account by ID
+func (h *AdminHandler) GetAdminByID(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.GetAdminByID(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles the retrieval of a single admin account by username
+func (h *AdminHandler) GetAdminByUserName(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.GetAdminByUserName(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+// This handles searching for admin accounts by a query string
+func (h *AdminHandler) SearchAdminByQeury(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		return
+	}
+
+	admin.SearchAdminByQuery(wr, h.Repo, h.Conn, h.Cfg)
 }
