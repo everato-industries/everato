@@ -5,10 +5,9 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"github.com/dtg-lucifer/everato/pkg"
 	"net/http"
 	"strings"
-
-	"github.com/dtg-lucifer/everato/pkg"
 )
 
 // Constants for common HTTP header values
