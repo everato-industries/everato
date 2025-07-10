@@ -341,6 +341,7 @@ type SuperUser struct {
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 	Username    string
+	Name        string
 }
 
 type Ticket struct {

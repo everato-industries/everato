@@ -101,7 +101,7 @@ func NewConfig(path string) (*Config, error) {
 // Parameters:
 //   - v: Any value that can be marshalled to JSON
 func PrettyPrint(v any) {
-	b, err := json.MarshalIndent(v, "", "  ")
+	b, err := json.Marshal(v)
 	if err != nil {
 		fmt.Println("error:", err)
 		return

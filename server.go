@@ -88,6 +88,10 @@ func (s *Server) initializeRoutes() {
 	api.NewHealthCheckHandler().RegisterRoutes(apivx)
 	api.NewMetricsHandler().RegisterRoutes(apivx)
 
+	// Route Group: Admin
+	// Admin login, creation and RBAC control
+	api.NewAdminHandler(s.Cfg).RegisterRoutes(apivx)
+
 	// Route Group: Authentication
 	// User registration, login, verification, etc.
 	api.NewAuthHandler(s.Cfg).RegisterRoutes(apivx)
