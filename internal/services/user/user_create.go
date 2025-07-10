@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/services/mailer"
 	"github.com/dtg-lucifer/everato/internal/utils"
@@ -14,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
+func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *config.Config) {
 	logger := pkg.NewLogger()
 	defer logger.Close() // Ensure the logger is closed when the function exits
 
@@ -48,6 +49,42 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) 
 			},
 		)
 		return
+	}
+
+	// Check if the admin emails are provided or not
+	//
+	// If provided then that means that the super_user is trying
+	// to create more admin accounts
+	if user_dto.AdminEmail != nil && user_dto.AdminUsername != nil && user_dto.AdminPassword != nil {
+		logger.StdoutLogger.Warn("Super user is tryin to create other admin accounts", "super_user_email", user_dto.AdminEmail)
+
+		// Validate the admin credentials
+		// The list of super users are in the *cfg
+		//
+		// Loop through the list and check if the details are correct or not
+		for _, super_user := range cfg.SuperUsers {
+			if super_user.Email == *user_dto.AdminEmail &&
+				super_user.UserName == *user_dto.AdminUsername &&
+				super_user.Password == *user_dto.AdminPassword {
+
+				// If the details are correct then we can proceed with the user creation
+				logger.StdoutLogger.Info("Super user credentials verified", "super_user_email", super_user.Email)
+				break
+			} else {
+				// If the details are not correct then we can return an error
+				logger.StdoutLogger.Error(
+					"Super user credentials are not valid",
+					"super_user_email", *user_dto.AdminEmail,
+				)
+				wr.Status(http.StatusUnauthorized).Json(
+					utils.M{
+						"error":   "Invalid super user credentials",
+						"message": "Please check your admin credentials and try again",
+					},
+				)
+				return
+			}
+		}
 	}
 
 	// Create the actual user in the database
