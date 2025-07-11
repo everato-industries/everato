@@ -69,8 +69,8 @@ func SuperUserInit(cfg *config.Config) error {
 			"Adding user with following details",
 			"username", u.Username,
 			"email", u.Email,
-			"role", u.Role,
-			"permissions", u.Permissions,
+			"role", u.Role, // This will be a string
+			"permissions", u.Permissions, // Show as a raw object
 		)
 	}
 
