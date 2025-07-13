@@ -4,9 +4,6 @@ package api
 
 import (
 	"context"
-	"net/http"
-
-	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
@@ -37,7 +34,6 @@ type EventHandler struct {
 var _ handlers.Handler = (*EventHandler)(nil) // Assert the interface implementation to catch errors
 // -----------------------------------------------------
 
-
 // NewEventHandler creates and initializes a new EventHandler instance.
 // It establishes a database connection and initializes the repository for event operations.
 //
@@ -66,7 +62,6 @@ func NewEventHandler() *EventHandler {
 		Repo:     repo,
 		Conn:     conn,
 		BasePath: "/events",
-		Cfg:      cfg,
 	}
 }
 
