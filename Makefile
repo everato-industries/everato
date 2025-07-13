@@ -16,7 +16,7 @@ MIGRATE := migrate
 TAILWIND := ./bin/tailwind
 
 ## DB config - use environment variables from .env file
-DB_URL ?= postgres://piush:root_access@localhost:5432/everato?sslmode=disable
+DB_URL ?= postgres://piush:root_access@postgres:5432/everato?sslmode=disable
 MIGRATIONS_DIR ?= internal/db/migrations
 
 ## Flags

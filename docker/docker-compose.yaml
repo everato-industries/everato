@@ -3,16 +3,18 @@ services:
         build:
             context: ../
             dockerfile: ./docker/Dockerfile
+        env_file:
+            - ../.env
         ports:
             - "8080:8080"
         environment:
-            DB_HOST: postgres
+            DB_HOST: postgres 
             DB_PORT: 5432
             DB_USER: piush
             DB_PASSWORD: root_access
             DB_NAME: everato
             DB_SSLMODE: disable
-            DB_URL: postgres://piush:root_access@postgres:5432/everato?sslmode=disable
+            DB_URL: ${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}
             MIGRATIONS_DIR: internal/db/migrations
             PORT: 8080
             ENV: development
