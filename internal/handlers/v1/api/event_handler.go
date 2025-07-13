@@ -12,7 +12,6 @@ import (
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
-	"net/http"
 )
 
 // EventHandler manages event-related HTTP endpoints in the API.
