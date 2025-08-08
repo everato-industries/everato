@@ -100,6 +100,7 @@ func (a *AdminLoginDTO) VerifyPassword(hashedPassword string) (bool, error) {
 type CreateAdminDTO struct {
 	Email       string   `json:"email" validate:"required,email"`                        // Admin's email address
 	UserName    string   `json:"username" validate:"required,min=3,max=20"`              // Admin's username
+	Name        string   `json:"name" validate:"required,min=2,max=100"`                 // Admin's name
 	Password    string   `json:"password" validate:"required,min=8,max=100"`             // Admin's password
 	Role        string   `json:"role" validate:"required,role"`                          // Admin's role (superadmin or admin)
 	Permissions []string `json:"permissions" validate:"required,min=1,dive,permissions"` // Admin's permissions
@@ -109,6 +110,7 @@ type CreateAdminDTO struct {
 func NewCreateAdminDTO() *CreateAdminDTO {
 	return &CreateAdminDTO{
 		Email:       "",
+		Name:        "",
 		UserName:    "",
 		Password:    "",
 		Role:        ADMIN_ROLE_EDITOR, // Default role is ADMIN
@@ -133,11 +135,37 @@ func NewCreateAdminDTO() *CreateAdminDTO {
 //   - MANAGE_USERS
 //   - VIEW_REPORTS
 func permission_validator(fl validator.FieldLevel) bool {
-	permissions := fl.Field().Interface().([]string)
-	if len(permissions) == 0 {
-		return false // Must have at least one permission
+	// First, get the field value as interface{}
+	fieldValue := fl.Field().Interface()
+
+	// Initialize an empty slice to store permissions
+	var permissions []string
+
+	// Handle different types using type assertions
+	switch v := fieldValue.(type) {
+	case string:
+		// Single string case
+		permissions = []string{v}
+	case []string:
+		// Direct []string case from CreateAdminDTO
+		permissions = v
+	case *[]string:
+		// Pointer case from UpdateAdminDTO
+		if v == nil {
+			return true // nil pointer is valid for "omitempty"
+		}
+		permissions = *v
+	default:
+		// Unsupported type
+		return false
 	}
 
+	// Handle empty permissions list
+	if len(permissions) == 0 {
+		return true // Empty is allowed with "omitempty"
+	}
+
+	// Define valid permissions
 	validPermissions := map[string]bool{
 		ADMIN_PERMISSION_MANAGE_EVENTS:   true,
 		ADMIN_PERMISSION_CREATE_EVENT:    true,
@@ -153,6 +181,7 @@ func permission_validator(fl validator.FieldLevel) bool {
 		ADMIN_PERMISSION_VIEW_REPORTS:    true,
 	}
 
+	// Check each permission
 	for _, permission := range permissions {
 		if !validPermissions[permission] {
 			return false // Invalid permission found
@@ -169,8 +198,34 @@ func permission_validator(fl validator.FieldLevel) bool {
 //   - ADMIN
 //   - EDITOR
 func role_validator(fl validator.FieldLevel) bool {
-	role := fl.Field().String()
+	// First, get the field value as interface{}
+	fieldValue := fl.Field().Interface()
 
+	// Initialize a role variable
+	var role string
+
+	// Handle different types using type assertions
+	switch v := fieldValue.(type) {
+	case string:
+		// Direct string case from CreateAdminDTO
+		role = v
+	case *string:
+		// Pointer case from UpdateAdminDTO
+		if v == nil {
+			return true // nil pointer is valid for "omitempty"
+		}
+		role = *v
+	default:
+		// Unsupported type
+		return false
+	}
+
+	// Handle empty role
+	if role == "" {
+		return true // Empty is allowed with "omitempty"
+	}
+
+	// Define valid roles
 	validRoles := map[string]bool{
 		ADMIN_ROLE_SUPERADMIN: true,
 		ADMIN_ROLE_ADMIN:      true,

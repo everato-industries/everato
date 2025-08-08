@@ -20,10 +20,10 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -55,8 +55,8 @@ OFFSET $2
 `
 
 type GetAllUsersParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error) {
@@ -140,9 +140,9 @@ OFFSET $3
 `
 
 type SearchUsersMatchingByNameParams struct {
-	Column1 pgtype.Text
-	Limit   int32
-	Offset  int32
+	Column1 pgtype.Text `json:"column_1"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
 }
 
 func (q *Queries) SearchUsersMatchingByName(ctx context.Context, arg SearchUsersMatchingByNameParams) ([]User, error) {
@@ -186,11 +186,11 @@ RETURNING id, first_name, last_name, email, password, verified, created_at, upda
 `
 
 type UpdateUserByIDParams struct {
-	ID        pgtype.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
+	ID        pgtype.UUID `json:"id"`
+	FirstName string      `json:"first_name"`
+	LastName  string      `json:"last_name"`
+	Email     string      `json:"email"`
+	Password  string      `json:"password"`
 }
 
 func (q *Queries) UpdateUserByID(ctx context.Context, arg UpdateUserByIDParams) (User, error) {

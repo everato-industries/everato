@@ -7,6 +7,7 @@ import (
 	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
+	"github.com/dtg-lucifer/everato/internal/middlewares"
 	"github.com/dtg-lucifer/everato/internal/services/admin"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
@@ -77,17 +78,35 @@ func NewAdminHandler(cfg *config.Config) *AdminHandler {
 // It sets up the necessary endpoints for managing admin accounts,
 // including login, creation, updates, deletion, and retrieval of admin accounts.
 func (h *AdminHandler) RegisterRoutes(r *mux.Router) {
+	// Create a subrouter for admin routes
 	router := r.PathPrefix(h.BasePath).Subrouter()
 
-	router.HandleFunc("/login", h.Login).Methods(http.MethodPost)                                  // Login to an admin account
-	router.HandleFunc("/create", h.CreateAdmin).Methods(http.MethodPost)                           // Create a new admin account
-	router.HandleFunc("/{id}", h.UpdateAdmin).Methods(http.MethodPut)                              // Update an admin by ID
-	router.HandleFunc("/send-verification/{id}", h.SendVerificationEmail).Methods(http.MethodPost) // Send verification email to an admin by ID
-	router.HandleFunc("/{id}", h.DeleteAdmin).Methods(http.MethodDelete)                           // Delete an admin by ID
-	router.HandleFunc("/all", h.GetAllAdmins).Methods(http.MethodGet)                              // Get all admins
-	router.HandleFunc("/{id}", h.GetAdminByID).Methods(http.MethodGet)                             // Get admin by ID
-	router.HandleFunc("/u/{username}", h.GetAdminByUserName).Methods(http.MethodGet)               // Get admin by username
-	router.HandleFunc("/{query}", h.SearchAdminByQeury).Methods(http.MethodGet)                    // Search admin by query
+	// Register the login route without protection
+	router.HandleFunc("/login", h.Login).Methods(http.MethodPost) // Login to an admin account
+
+	// Create a protected subrouter for admin-only routes
+	adminMiddleware := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
+
+	// Create protected routes
+	protectedRouter := router.NewRoute().Subrouter()
+	protectedRouter.Use(adminMiddleware.Guard)
+
+	// Register all other routes with the protected router
+	// Register static path routes first
+	protectedRouter.HandleFunc("/create", h.CreateAdmin).Methods(http.MethodPost)           // Create a new admin account
+	protectedRouter.HandleFunc("/all", h.GetAllAdmins).Methods(http.MethodGet)              // Get all admins
+	protectedRouter.HandleFunc("/permissions", h.GetAllPermissions).Methods(http.MethodGet) // Get all permissions
+	protectedRouter.HandleFunc("/roles", h.GetAllRoles).Methods(http.MethodGet)             // Get all roles
+
+	// Then register routes with path parameters
+	protectedRouter.HandleFunc("/send-verification/{id}", h.SendVerificationEmail).Methods(http.MethodPost) // Send verification email to an admin by ID
+	protectedRouter.HandleFunc("/u/{username}", h.GetAdminByUserName).Methods(http.MethodGet)               // Get admin by username
+	protectedRouter.HandleFunc("/{id}", h.UpdateAdmin).Methods(http.MethodPut)                              // Update an admin by ID
+	protectedRouter.HandleFunc("/{id}", h.DeleteAdmin).Methods(http.MethodDelete)                           // Delete an admin by ID
+	protectedRouter.HandleFunc("/{id}", h.GetAdminByID).Methods(http.MethodGet)                             // Get admin by ID
+
+	// This needs to be last as it's the most generic pattern
+	protectedRouter.HandleFunc("/{query}", h.SearchAdminByQeury).Methods(http.MethodGet) // Search admin by query
 }
 
 // Close cleans up the database connection when the handler is no longer needed.
@@ -215,4 +234,40 @@ func (h *AdminHandler) SearchAdminByQeury(w http.ResponseWriter, r *http.Request
 	}
 
 	admin.SearchAdminByQuery(wr, h.Repo, h.Conn, h.Cfg)
+}
+
+func (h *AdminHandler) GetAllPermissions(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		wr.Status(http.StatusInternalServerError).Json(
+			utils.M{
+				"message": "Database connection error",
+				"error":   "Database repository or connection is not initialized",
+			},
+		)
+		return
+	}
+
+	admin.GetAllPermissions(wr, h.Repo, h.Conn)
+}
+
+func (h *AdminHandler) GetAllRoles(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// If either of the repo or the conn is nil that means that there is some error
+	if h.Repo == nil || h.Conn == nil {
+		pkg.NewLogger().StdoutLogger.Error("Database repository or connection is not initialized")
+		wr.Status(http.StatusInternalServerError).Json(
+			utils.M{
+				"message": "Database connection error",
+				"error":   "Database repository or connection is not initialized",
+			},
+		)
+		return
+	}
+
+	admin.GetAllRoles(wr, h.Repo, h.Conn)
 }

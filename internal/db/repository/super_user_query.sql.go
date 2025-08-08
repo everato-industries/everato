@@ -14,37 +14,58 @@ import (
 const createAdminIfNotExists = `-- name: CreateAdminIfNotExists :one
 INSERT INTO super_users (username, name, email, password, role, permissions)
 SELECT
-    $1,
-    $2,
-    $3,
-    $4,
+    $1::VARCHAR,
+    $2::VARCHAR,
+    $3::VARCHAR,
+    $4::VARCHAR,
     $5::SUPER_USER_ROLE,
-    $6::PERMISSIONS[]
+    ($6::TEXT[])::PERMISSIONS[]
 WHERE NOT EXISTS (
     SELECT 1 FROM super_users WHERE username = $1 OR email = $3
 )
-RETURNING id, email, password, role, permissions, created_at, updated_at, username, name
+RETURNING
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] AS permissions,
+    created_at,
+    updated_at,
+    username,
+    name
 `
 
 type CreateAdminIfNotExistsParams struct {
-	Username string
-	Name     string
-	Email    string
-	Password string
-	Column5  SuperUserRole
-	Column6  []Permissions
+	Column1 string        `json:"column_1"`
+	Column2 string        `json:"column_2"`
+	Column3 string        `json:"column_3"`
+	Column4 string        `json:"column_4"`
+	Column5 SuperUserRole `json:"column_5"`
+	Column6 []string      `json:"column_6"`
 }
 
-func (q *Queries) CreateAdminIfNotExists(ctx context.Context, arg CreateAdminIfNotExistsParams) (SuperUser, error) {
+type CreateAdminIfNotExistsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) CreateAdminIfNotExists(ctx context.Context, arg CreateAdminIfNotExistsParams) (CreateAdminIfNotExistsRow, error) {
 	row := q.db.QueryRow(ctx, createAdminIfNotExists,
-		arg.Username,
-		arg.Name,
-		arg.Email,
-		arg.Password,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
 		arg.Column5,
 		arg.Column6,
 	)
-	var i SuperUser
+	var i CreateAdminIfNotExistsRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -88,22 +109,22 @@ RETURNING id, email, password, role, permissions::text[], created_at, updated_at
 `
 
 type CreateSuperUserIfNotExistsParams struct {
-	Column1 string
-	Column2 string
-	Column3 string
-	Column4 string
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+	Column3 string `json:"column_3"`
+	Column4 string `json:"column_4"`
 }
 
 type CreateSuperUserIfNotExistsRow struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
-	Name        string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 func (q *Queries) CreateSuperUserIfNotExists(ctx context.Context, arg CreateSuperUserIfNotExistsParams) (CreateSuperUserIfNotExistsRow, error) {
@@ -135,15 +156,15 @@ WHERE email = $1
 `
 
 type GetAdminByEmailRow struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
-	Name        string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 func (q *Queries) GetAdminByEmail(ctx context.Context, email string) (GetAdminByEmailRow, error) {
@@ -170,15 +191,15 @@ WHERE id = $1
 `
 
 type GetAdminByIdRow struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
-	Name        string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 func (q *Queries) GetAdminById(ctx context.Context, id pgtype.UUID) (GetAdminByIdRow, error) {
@@ -205,15 +226,15 @@ WHERE username = $1
 `
 
 type GetAdminByUsernameRow struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
-	Name        string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 func (q *Queries) GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error) {

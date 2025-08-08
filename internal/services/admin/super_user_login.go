@@ -3,6 +3,7 @@ package admin
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dtg-lucifer/everato/config"
@@ -153,6 +154,9 @@ func Login(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *
 	// Calculate absolute expiration time from now
 	exp_time := time.Now().Add(exp)
 
+	roles := make([]string, 0, len(admin_by_email.Role))
+	admin_by_email.Role.Scan(&roles) // Scan the role into a slice
+
 	// Create token with standard JWT claims following best practices:
 	// - sub: Subject identifier (user ID)
 	// - aud: Audience (application using the token)
@@ -161,12 +165,13 @@ func Login(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *
 	// - exp: Expiration time
 	// - uid: Custom claim with user ID for application use
 	token, err := signer.Sign(jwt.MapClaims{
-		"sub": fmt.Sprintf("jwt_login_user_id_%s", admin_uid.String()),
-		"aud": fmt.Sprintf("jwt_login_user_name_%s", admin_by_email.Username),
-		"iss": fmt.Sprintf("%s", utils.GetEnv("APP_NAME", "everato")),
-		"iat": jwt.NewNumericDate(time.Now()),
-		"exp": jwt.NewNumericDate(exp_time),
-		"uid": admin_uid.String(),
+		"sub":  fmt.Sprintf("jwt_login_user_id_%s", admin_uid.String()),
+		"aud":  fmt.Sprintf("jwt_login_user_name_%s", admin_by_email.Username),
+		"iss":  fmt.Sprintf("%s", utils.GetEnv("APP_NAME", "everato")),
+		"iat":  jwt.NewNumericDate(time.Now()),
+		"exp":  jwt.NewNumericDate(exp_time),
+		"role": strings.Join(roles, ":"),
+		"uid":  admin_uid.String(),
 	})
 	if err != nil {
 		logger.StdoutLogger.Error(
@@ -205,7 +210,7 @@ func Login(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *
 		"Admin logged in successfully",
 		"email", login_dto.Email,
 		"admin_id", admin_uid.String(),
-		"requestId", wr.R.Header.Get("X-Request-ID"),
+		"requestId", wr.W.Header().Get("X-Request-ID"),
 	)
 
 	// Set JWT as an HTTP-only cookie for session management

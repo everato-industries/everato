@@ -28,16 +28,25 @@ RETURNING id, email, password, role, permissions::text[], created_at, updated_at
 -- name: CreateAdminIfNotExists :one
 INSERT INTO super_users (username, name, email, password, role, permissions)
 SELECT
-    $1,
-    $2,
-    $3,
-    $4,
+    $1::VARCHAR,
+    $2::VARCHAR,
+    $3::VARCHAR,
+    $4::VARCHAR,
     $5::SUPER_USER_ROLE,
-    $6::PERMISSIONS[]
+    ($6::TEXT[])::PERMISSIONS[]
 WHERE NOT EXISTS (
     SELECT 1 FROM super_users WHERE username = $1 OR email = $3
 )
-RETURNING id, email, password, role, permissions, created_at, updated_at, username, name;
+RETURNING
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] AS permissions,
+    created_at,
+    updated_at,
+    username,
+    name;
 
 -- name: GetAdminUserRoles :many
 SELECT e.enumlabel AS value
