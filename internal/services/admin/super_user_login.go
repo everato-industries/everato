@@ -60,14 +60,14 @@ func Login(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *
 		}
 	}
 	if !match {
-		logger.StdoutLogger.Error("Super user not found", "email", login_dto.Email)
-		wr.Status(http.StatusUnauthorized).Json(
-			utils.M{
-				"message": "Unauthorized",
-				"error":   "Super user not found",
-			},
-		)
-		return
+		logger.StdoutLogger.Error("Super user not found in the config, searching in the database", "query_email", login_dto.Email)
+		// wr.Status(http.StatusUnauthorized).Json(
+		// 	utils.M{
+		// 		"message": "Unauthorized",
+		// 		"error":   "Super user not found",
+		// 	},
+		// )
+		// return
 	}
 
 	// *

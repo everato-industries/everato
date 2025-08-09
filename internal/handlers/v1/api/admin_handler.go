@@ -82,7 +82,10 @@ func (h *AdminHandler) RegisterRoutes(r *mux.Router) {
 	router := r.PathPrefix(h.BasePath).Subrouter()
 
 	// Register the login route without protection
-	router.HandleFunc("/login", h.Login).Methods(http.MethodPost) // Login to an admin account
+	router.HandleFunc("/login", h.Login).Methods(http.MethodPost)                  // Login to an super_admin account
+	router.HandleFunc("/all", h.GetAllAdmins).Methods(http.MethodGet)              // Get all admins
+	router.HandleFunc("/permissions", h.GetAllPermissions).Methods(http.MethodGet) // Get all permissions
+	router.HandleFunc("/roles", h.GetAllRoles).Methods(http.MethodGet)             // Get all roles
 
 	// Create a protected subrouter for admin-only routes
 	adminMiddleware := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
@@ -93,10 +96,7 @@ func (h *AdminHandler) RegisterRoutes(r *mux.Router) {
 
 	// Register all other routes with the protected router
 	// Register static path routes first
-	protectedRouter.HandleFunc("/create", h.CreateAdmin).Methods(http.MethodPost)           // Create a new admin account
-	protectedRouter.HandleFunc("/all", h.GetAllAdmins).Methods(http.MethodGet)              // Get all admins
-	protectedRouter.HandleFunc("/permissions", h.GetAllPermissions).Methods(http.MethodGet) // Get all permissions
-	protectedRouter.HandleFunc("/roles", h.GetAllRoles).Methods(http.MethodGet)             // Get all roles
+	protectedRouter.HandleFunc("/create", h.CreateAdmin).Methods(http.MethodPost) // Create a new admin account
 
 	// Then register routes with path parameters
 	protectedRouter.HandleFunc("/send-verification/{id}", h.SendVerificationEmail).Methods(http.MethodPost) // Send verification email to an admin by ID
