@@ -307,3 +307,60 @@ func (q *Queries) GetAdminUserRoles(ctx context.Context) ([]string, error) {
 	}
 	return items, nil
 }
+
+const getAllAdmins = `-- name: GetAllAdmins :many
+SELECT
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] as permissions,
+    created_at,
+    updated_at,
+    username,
+    name
+FROM super_users
+ORDER BY created_at DESC
+`
+
+type GetAllAdminsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) GetAllAdmins(ctx context.Context) ([]GetAllAdminsRow, error) {
+	rows, err := q.db.Query(ctx, getAllAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllAdminsRow
+	for rows.Next() {
+		var i GetAllAdminsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Password,
+			&i.Role,
+			&i.Permissions,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Username,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

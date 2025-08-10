@@ -98,12 +98,14 @@ func (h *AdminHandler) RegisterRoutes(r *mux.Router) {
 	// Register static path routes first
 	protectedRouter.HandleFunc("/create", h.CreateAdmin).Methods(http.MethodPost) // Create a new admin account
 
-	// Then register routes with path parameters
-	protectedRouter.HandleFunc("/send-verification/{id}", h.SendVerificationEmail).Methods(http.MethodPost) // Send verification email to an admin by ID
-	protectedRouter.HandleFunc("/u/{username}", h.GetAdminByUserName).Methods(http.MethodGet)               // Get admin by username
-	protectedRouter.HandleFunc("/{id}", h.UpdateAdmin).Methods(http.MethodPut)                              // Update an admin by ID
-	protectedRouter.HandleFunc("/{id}", h.DeleteAdmin).Methods(http.MethodDelete)                           // Delete an admin by ID
-	protectedRouter.HandleFunc("/{id}", h.GetAdminByID).Methods(http.MethodGet)                             // Get admin by ID
+	// --------------------------------------------------------------
+	protectedRouter.HandleFunc("/send-verification/{id}", h.SendVerificationEmail).Methods(http.MethodPost)
+	// --------------------------------------------------------------
+
+	protectedRouter.HandleFunc("/u/{username}", h.GetAdminByUserName).Methods(http.MethodGet) // Get admin by username
+	protectedRouter.HandleFunc("/{id}", h.UpdateAdmin).Methods(http.MethodPut)                // Update an admin by ID
+	protectedRouter.HandleFunc("/{id}", h.DeleteAdmin).Methods(http.MethodDelete)             // Delete an admin by ID
+	protectedRouter.HandleFunc("/{id}", h.GetAdminByID).Methods(http.MethodGet)               // Get admin by ID
 
 	// This needs to be last as it's the most generic pattern
 	protectedRouter.HandleFunc("/{query}", h.SearchAdminByQeury).Methods(http.MethodGet) // Search admin by query

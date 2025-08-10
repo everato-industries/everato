@@ -134,9 +134,9 @@ func (am *AdminMiddleware) Guard(next http.Handler) http.Handler {
 			if isAdmin {
 				// Add the admin ID to the request context for downstream handlers
 				ctx := context.WithValue(r.Context(), "admin_id", uid.(string))
-				ctx = context.WithValue(ctx, "is_admin", true)
-				r = r.WithContext(ctx)
-				next.ServeHTTP(w, r)
+				new_ctx := context.WithValue(ctx, "is_admin", true)
+				new_r := r.WithContext(new_ctx)
+				next.ServeHTTP(w, new_r)
 				return
 			}
 		}

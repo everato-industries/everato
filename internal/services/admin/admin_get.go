@@ -15,115 +15,13 @@ func GetAllAdmins(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
-	// We don't need a transaction for a simple read operation, but for consistency
-	// with other methods and to ensure a consistent snapshot of the data, we'll use one
-	tx, err := conn.Begin(wr.R.Context())
+	admins, err := repo.GetAllAdmins(wr.R.Context())
 	if err != nil {
-		logger.StdoutLogger.Error("Error starting transaction for GetAllAdmins", "err", err.Error())
+		logger.StdoutLogger.Error("Failed to retrieve admin accounts", "err", err.Error())
 		wr.Status(http.StatusInternalServerError).Json(
 			utils.M{
 				"message": "Internal server error",
-				"error":   "Failed to start database transaction",
-			},
-		)
-		return
-	}
-
-	// Query the database for all admin users
-	// We'll need to implement this query in the repository
-	// For now, let's return a mock response
-
-	// Get the current admin ID from the request context to ensure we have proper authorization
-	adminID, ok := wr.R.Context().Value("admin_id").(string)
-	if !ok {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Failed to get admin ID from context")
-		wr.Status(http.StatusUnauthorized).Json(
-			utils.M{
-				"message": "Authentication required",
-				"error":   "Admin ID not found in request context",
-			},
-		)
-		return
-	}
-
-	// Get the admin data from the database to check permissions
-	adminUUID, err := utils.StringToUUID(adminID)
-	if err != nil {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Invalid admin UUID", "adminID", adminID, "err", err.Error())
-		wr.Status(http.StatusBadRequest).Json(
-			utils.M{
-				"message": "Invalid admin ID format",
-				"error":   err.Error(),
-			},
-		)
-		return
-	}
-
-	// Check if the admin exists and has appropriate permissions
-	currentAdmin, err := repo.WithTx(tx).GetAdminById(wr.R.Context(), adminUUID)
-	if err != nil {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Failed to retrieve admin data", "adminID", adminID, "err", err.Error())
-		wr.Status(http.StatusUnauthorized).Json(
-			utils.M{
-				"message": "Authentication failed",
-				"error":   "Admin account not found",
-			},
-		)
-		return
-	}
-
-	// Check if the admin has MANAGE_USERS permission
-	// This would require either examining the permissions field or the role
-	hasPermission := false
-	for _, permission := range currentAdmin.Permissions {
-		if permission == "MANAGE_USERS" {
-			hasPermission = true
-			break
-		}
-	}
-
-	// Super admins always have all permissions
-	if currentAdmin.Role == "SUPER_ADMIN" {
-		hasPermission = true
-	}
-
-	if !hasPermission {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Admin lacks permission", "adminID", adminID, "role", currentAdmin.Role)
-		wr.Status(http.StatusForbidden).Json(
-			utils.M{
-				"message": "Access denied",
-				"error":   "Insufficient permissions to view admin accounts",
-			},
-		)
-		return
-	}
-
-	// TODO: Implement a query to get all admins
-	// For now, we'll return just the current admin
-	admins := []utils.M{
-		{
-			"id":          currentAdmin.ID.String(),
-			"email":       currentAdmin.Email,
-			"username":    currentAdmin.Username,
-			"name":        currentAdmin.Name,
-			"role":        currentAdmin.Role,
-			"permissions": currentAdmin.Permissions,
-			"created_at":  currentAdmin.CreatedAt,
-			"updated_at":  currentAdmin.UpdatedAt,
-		},
-	}
-
-	// Commit the transaction
-	if err = tx.Commit(wr.R.Context()); err != nil {
-		logger.StdoutLogger.Error("Failed to commit transaction", "err", err.Error())
-		wr.Status(http.StatusInternalServerError).Json(
-			utils.M{
-				"message": "Internal server error",
-				"error":   "Failed to complete database operation",
+				"error":   "Failed to retrieve admin accounts",
 			},
 		)
 		return
@@ -332,48 +230,6 @@ func GetAdminByUserName(wr *utils.HttpWriter, repo *repository.Queries, conn *pg
 		return
 	}
 
-	// Get the current admin ID from the request context to ensure we have proper authorization
-	currentAdminID, ok := wr.R.Context().Value("admin_id").(string)
-	if !ok {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Failed to get admin ID from context")
-		wr.Status(http.StatusUnauthorized).Json(
-			utils.M{
-				"message": "Authentication required",
-				"error":   "Admin ID not found in request context",
-			},
-		)
-		return
-	}
-
-	// Convert the current admin ID to UUID
-	currentAdminUUID, err := utils.StringToUUID(currentAdminID)
-	if err != nil {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Invalid admin UUID", "adminID", currentAdminID, "err", err.Error())
-		wr.Status(http.StatusBadRequest).Json(
-			utils.M{
-				"message": "Invalid admin ID format",
-				"error":   err.Error(),
-			},
-		)
-		return
-	}
-
-	// Check if the current admin exists and has appropriate permissions
-	currentAdmin, err := repo.WithTx(tx).GetAdminById(wr.R.Context(), currentAdminUUID)
-	if err != nil {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Failed to retrieve current admin data", "currentAdminID", currentAdminID, "err", err.Error())
-		wr.Status(http.StatusUnauthorized).Json(
-			utils.M{
-				"message": "Authentication failed",
-				"error":   "Admin account not found",
-			},
-		)
-		return
-	}
-
 	// Get the target admin from the database by username
 	targetAdmin, err := repo.WithTx(tx).GetAdminByUsername(wr.R.Context(), targetUsername)
 	if err != nil {
@@ -383,38 +239,6 @@ func GetAdminByUserName(wr *utils.HttpWriter, repo *repository.Queries, conn *pg
 			utils.M{
 				"message": "Admin not found",
 				"error":   "No admin account exists with the provided username",
-			},
-		)
-		return
-	}
-
-	// Check if the current admin is allowed to view the target admin
-	// Either it's the same admin (check by ID), or the current admin has MANAGE_USERS permission, or is a SUPER_ADMIN
-	hasPermission := currentAdmin.ID.String() == targetAdmin.ID.String() // Self-viewing is always allowed
-
-	if !hasPermission {
-		// Check for MANAGE_USERS permission or SUPER_ADMIN role
-		if currentAdmin.Role == "SUPER_ADMIN" {
-			hasPermission = true
-		} else {
-			for _, permission := range currentAdmin.Permissions {
-				if permission == "MANAGE_USERS" {
-					hasPermission = true
-					break
-				}
-			}
-		}
-	}
-
-	if !hasPermission {
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		logger.StdoutLogger.Error("Admin lacks permission to view other admin",
-			"currentAdminID", currentAdminID,
-			"targetUsername", targetUsername)
-		wr.Status(http.StatusForbidden).Json(
-			utils.M{
-				"message": "Access denied",
-				"error":   "Insufficient permissions to view this admin account",
 			},
 		)
 		return

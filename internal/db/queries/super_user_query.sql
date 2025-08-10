@@ -60,6 +60,20 @@ FROM pg_catalog.pg_type AS t
 JOIN pg_catalog.pg_enum AS e ON t.oid = e.enumtypid
 WHERE t.typname = 'permissions';
 
+-- name: GetAllAdmins :many
+SELECT
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] as permissions,
+    created_at,
+    updated_at,
+    username,
+    name
+FROM super_users
+ORDER BY created_at DESC;
+
 -- name: GetAdminByEmail :one
 SELECT id, email, password, role, permissions::text[], created_at, updated_at, username, name
 FROM super_users

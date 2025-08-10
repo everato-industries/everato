@@ -71,6 +71,68 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		return
 	}
 
+	// Get the admin details from the context
+	// then look if the admin has the right permissions or not
+	adminID, ok := wr.R.Context().Value("admin_id").(string)
+	if !ok {
+		logger.StdoutLogger.Error("Failed to get admin ID from context")
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
+		wr.Status(http.StatusUnauthorized).Json(
+			utils.M{
+				"message": "Authentication required, admin ID not found in request context.",
+				"err":     "Admin ID not found in request context",
+			},
+		)
+		return
+	}
+
+	// Get the admin details from the db
+	admin_uuid, err := utils.StringToUUID(adminID)
+	if err != nil {
+		logger.StdoutLogger.Error("Invalid admin UUID", "adminID", adminID, "err", err.Error())
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
+		wr.Status(http.StatusBadRequest).Json(
+			utils.M{
+				"message": "Invalid admin ID format.",
+				"err":     err.Error(),
+			},
+		)
+		return
+	}
+
+	admin, err := repo.WithTx(tx).GetAdminById(wr.R.Context(), admin_uuid)
+	if err != nil {
+		logger.StdoutLogger.Error("Failed to retrieve admin data", "adminID", adminID, "err", err.Error())
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
+		wr.Status(http.StatusUnauthorized).Json(
+			utils.M{
+				"message": "Authentication failed, unable to retrieve admin data.",
+				"err":     err.Error(),
+			},
+		)
+		return
+	}
+
+	has_permission := false // Flag to check if the admin has permission to create events
+	for perm := range admin.Permissions {
+		if repository.Permissions(admin.Permissions[perm]) == repository.PermissionsCREATEEVENT {
+			has_permission = true // Admin has permission to create events
+			break
+		}
+	}
+
+	if !has_permission {
+		logger.StdoutLogger.Error("Admin does not have permission to create events", "adminID", adminID)
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
+		wr.Status(http.StatusForbidden).Json(
+			utils.M{
+				"message": "You do not have permission to create events.",
+				"err":     "Permission denied",
+			},
+		)
+		return
+	}
+
 	// Generate a URL-friendly slug from the event title
 	// This will be used in event URLs and must be unique across all events
 	slug, err := utils.GenerateSlug(eventDTO.Title)

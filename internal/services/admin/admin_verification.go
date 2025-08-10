@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/dtg-lucifer/everato/config"
@@ -120,15 +121,7 @@ func SendVerificationEmail(wr *utils.HttpWriter, repo *repository.Queries, conn 
 	// 3. Admins can send verification emails to themselves
 	isSelfAction := currentAdminID == targetAdminID
 	isSuperAdmin := currentAdmin.Role == "SUPER_ADMIN"
-	hasManageUsersPermission := false
-
-	// Check if the current admin has MANAGE_USERS permission
-	for _, perm := range currentAdmin.Permissions {
-		if perm == "MANAGE_USERS" {
-			hasManageUsersPermission = true
-			break
-		}
-	}
+	hasManageUsersPermission := slices.Contains(currentAdmin.Permissions, "MANAGE_USERS")
 
 	// Check if the current admin is allowed to send verification email to the target admin
 	hasSendPermission := isSelfAction || isSuperAdmin ||
