@@ -11,12 +11,82 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createSuperUserIfNotExists = `-- name: CreateSuperUserIfNotExists :one
-INSERT INTO super_users (username, email, password, role, permissions)
+const createAdminIfNotExists = `-- name: CreateAdminIfNotExists :one
+INSERT INTO super_users (username, name, email, password, role, permissions)
 SELECT
     $1::VARCHAR,
     $2::VARCHAR,
     $3::VARCHAR,
+    $4::VARCHAR,
+    $5::SUPER_USER_ROLE,
+    ($6::TEXT[])::PERMISSIONS[]
+WHERE NOT EXISTS (
+    SELECT 1 FROM super_users WHERE username = $1 OR email = $3
+)
+RETURNING
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] AS permissions,
+    created_at,
+    updated_at,
+    username,
+    name
+`
+
+type CreateAdminIfNotExistsParams struct {
+	Column1 string        `json:"column_1"`
+	Column2 string        `json:"column_2"`
+	Column3 string        `json:"column_3"`
+	Column4 string        `json:"column_4"`
+	Column5 SuperUserRole `json:"column_5"`
+	Column6 []string      `json:"column_6"`
+}
+
+type CreateAdminIfNotExistsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) CreateAdminIfNotExists(ctx context.Context, arg CreateAdminIfNotExistsParams) (CreateAdminIfNotExistsRow, error) {
+	row := q.db.QueryRow(ctx, createAdminIfNotExists,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+		arg.Column5,
+		arg.Column6,
+	)
+	var i CreateAdminIfNotExistsRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.Permissions,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Name,
+	)
+	return i, err
+}
+
+const createSuperUserIfNotExists = `-- name: CreateSuperUserIfNotExists :one
+INSERT INTO super_users (username, name, email, password, role, permissions)
+SELECT
+    $1::VARCHAR,
+    $2::VARCHAR,
+    $3::VARCHAR,
+    $4::VARCHAR,
     'SUPER_ADMIN'::SUPER_USER_ROLE,
     ARRAY[
         'MANAGE_EVENTS',
@@ -33,30 +103,37 @@ SELECT
         'VIEW_REPORTS'
     ]::PERMISSIONS[]
 WHERE NOT EXISTS (
-    SELECT 1 FROM super_users WHERE username = $1::VARCHAR OR email = $2::VARCHAR
+    SELECT 1 FROM super_users WHERE username = $1::VARCHAR OR email = $3::VARCHAR
 )
-RETURNING id, email, password, role, permissions::text[], created_at, updated_at, username
+RETURNING id, email, password, role, permissions::text[], created_at, updated_at, username, name
 `
 
 type CreateSuperUserIfNotExistsParams struct {
-	Column1 string
-	Column2 string
-	Column3 string
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+	Column3 string `json:"column_3"`
+	Column4 string `json:"column_4"`
 }
 
 type CreateSuperUserIfNotExistsRow struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 func (q *Queries) CreateSuperUserIfNotExists(ctx context.Context, arg CreateSuperUserIfNotExistsParams) (CreateSuperUserIfNotExistsRow, error) {
-	row := q.db.QueryRow(ctx, createSuperUserIfNotExists, arg.Column1, arg.Column2, arg.Column3)
+	row := q.db.QueryRow(ctx, createSuperUserIfNotExists,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+	)
 	var i CreateSuperUserIfNotExistsRow
 	err := row.Scan(
 		&i.ID,
@@ -67,6 +144,223 @@ func (q *Queries) CreateSuperUserIfNotExists(ctx context.Context, arg CreateSupe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Username,
+		&i.Name,
 	)
 	return i, err
+}
+
+const getAdminByEmail = `-- name: GetAdminByEmail :one
+SELECT id, email, password, role, permissions::text[], created_at, updated_at, username, name
+FROM super_users
+WHERE email = $1
+`
+
+type GetAdminByEmailRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) GetAdminByEmail(ctx context.Context, email string) (GetAdminByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getAdminByEmail, email)
+	var i GetAdminByEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.Permissions,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Name,
+	)
+	return i, err
+}
+
+const getAdminById = `-- name: GetAdminById :one
+SELECT id, email, password, role, permissions::text[], created_at, updated_at, username, name
+FROM super_users
+WHERE id = $1
+`
+
+type GetAdminByIdRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) GetAdminById(ctx context.Context, id pgtype.UUID) (GetAdminByIdRow, error) {
+	row := q.db.QueryRow(ctx, getAdminById, id)
+	var i GetAdminByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.Permissions,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Name,
+	)
+	return i, err
+}
+
+const getAdminByUsername = `-- name: GetAdminByUsername :one
+SELECT id, email, password, role, permissions::text[], created_at, updated_at, username, name
+FROM super_users
+WHERE username = $1
+`
+
+type GetAdminByUsernameRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) GetAdminByUsername(ctx context.Context, username string) (GetAdminByUsernameRow, error) {
+	row := q.db.QueryRow(ctx, getAdminByUsername, username)
+	var i GetAdminByUsernameRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.Permissions,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Username,
+		&i.Name,
+	)
+	return i, err
+}
+
+const getAdminPermissions = `-- name: GetAdminPermissions :many
+SELECT e.enumlabel AS value
+FROM pg_catalog.pg_type AS t
+JOIN pg_catalog.pg_enum AS e ON t.oid = e.enumtypid
+WHERE t.typname = 'permissions'
+`
+
+func (q *Queries) GetAdminPermissions(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAdminPermissions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var value string
+		if err := rows.Scan(&value); err != nil {
+			return nil, err
+		}
+		items = append(items, value)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAdminUserRoles = `-- name: GetAdminUserRoles :many
+SELECT e.enumlabel AS value
+FROM pg_catalog.pg_type AS t
+JOIN pg_catalog.pg_enum AS e ON t.oid = e.enumtypid
+WHERE t.typname = 'super_user_role'
+`
+
+func (q *Queries) GetAdminUserRoles(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAdminUserRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var value string
+		if err := rows.Scan(&value); err != nil {
+			return nil, err
+		}
+		items = append(items, value)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllAdmins = `-- name: GetAllAdmins :many
+SELECT
+    id,
+    email,
+    password,
+    role,
+    permissions::text[] as permissions,
+    created_at,
+    updated_at,
+    username,
+    name
+FROM super_users
+ORDER BY created_at DESC
+`
+
+type GetAllAdminsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []string           `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
+}
+
+func (q *Queries) GetAllAdmins(ctx context.Context) ([]GetAllAdminsRow, error) {
+	rows, err := q.db.Query(ctx, getAllAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllAdminsRow
+	for rows.Next() {
+		var i GetAllAdminsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Password,
+			&i.Role,
+			&i.Permissions,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Username,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

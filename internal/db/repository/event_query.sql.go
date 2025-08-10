@@ -44,17 +44,17 @@ INSERT INTO events (
 `
 
 type CreateEventParams struct {
-	Title          string
-	Description    string
-	Slug           string
-	Banner         string
-	Icon           string
-	AdminID        pgtype.UUID
-	StartTime      pgtype.Timestamptz
-	EndTime        pgtype.Timestamptz
-	Location       pgtype.Text
-	TotalSeats     int32
-	AvailableSeats int32
+	Title          string             `json:"title"`
+	Description    string             `json:"description"`
+	Slug           string             `json:"slug"`
+	Banner         string             `json:"banner"`
+	Icon           string             `json:"icon"`
+	AdminID        pgtype.UUID        `json:"admin_id"`
+	StartTime      pgtype.Timestamptz `json:"start_time"`
+	EndTime        pgtype.Timestamptz `json:"end_time"`
+	Location       pgtype.Text        `json:"location"`
+	TotalSeats     int32              `json:"total_seats"`
+	AvailableSeats int32              `json:"available_seats"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event, error) {
@@ -162,8 +162,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListEventsParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event, error) {
@@ -252,9 +252,9 @@ LIMIT $2 OFFSET $3
 `
 
 type SearchByNameParams struct {
-	Column1 pgtype.Text
-	Limit   int32
-	Offset  int32
+	Column1 pgtype.Text `json:"column_1"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
 }
 
 func (q *Queries) SearchByName(ctx context.Context, arg SearchByNameParams) ([]Event, error) {
@@ -323,18 +323,18 @@ RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, 
 `
 
 type UpdateEventParams struct {
-	ID             pgtype.UUID
-	Title          string
-	Description    string
-	Slug           string
-	Banner         string
-	Icon           string
-	AdminID        pgtype.UUID
-	StartTime      pgtype.Timestamptz
-	EndTime        pgtype.Timestamptz
-	Location       pgtype.Text
-	TotalSeats     int32
-	AvailableSeats int32
+	ID             pgtype.UUID        `json:"id"`
+	Title          string             `json:"title"`
+	Description    string             `json:"description"`
+	Slug           string             `json:"slug"`
+	Banner         string             `json:"banner"`
+	Icon           string             `json:"icon"`
+	AdminID        pgtype.UUID        `json:"admin_id"`
+	StartTime      pgtype.Timestamptz `json:"start_time"`
+	EndTime        pgtype.Timestamptz `json:"end_time"`
+	Location       pgtype.Text        `json:"location"`
+	TotalSeats     int32              `json:"total_seats"`
+	AvailableSeats int32              `json:"available_seats"`
 }
 
 func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error) {

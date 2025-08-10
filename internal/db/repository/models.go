@@ -35,8 +35,8 @@ func (e *BookingStatus) Scan(src interface{}) error {
 }
 
 type NullBookingStatus struct {
-	BookingStatus BookingStatus
-	Valid         bool // Valid is true if BookingStatus is not NULL
+	BookingStatus BookingStatus `json:"booking_status"`
+	Valid         bool          `json:"valid"` // Valid is true if BookingStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -55,6 +55,19 @@ func (ns NullBookingStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.BookingStatus), nil
+}
+
+func (e BookingStatus) Valid() bool {
+	switch e {
+	case BookingStatusPENDING,
+		BookingStatusPENDINGPAYMENT,
+		BookingStatusTIMEOUT,
+		BookingStatusFILLED,
+		BookingStatusCONFIRMED,
+		BookingStatusCANCELLED:
+		return true
+	}
+	return false
 }
 
 type PaymentStatus string
@@ -80,8 +93,8 @@ func (e *PaymentStatus) Scan(src interface{}) error {
 }
 
 type NullPaymentStatus struct {
-	PaymentStatus PaymentStatus
-	Valid         bool // Valid is true if PaymentStatus is not NULL
+	PaymentStatus PaymentStatus `json:"payment_status"`
+	Valid         bool          `json:"valid"` // Valid is true if PaymentStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -100,6 +113,18 @@ func (ns NullPaymentStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.PaymentStatus), nil
+}
+
+func (e PaymentStatus) Valid() bool {
+	switch e {
+	case PaymentStatusDONE,
+		PaymentStatusCANCELLED,
+		PaymentStatusTIMEOUT,
+		PaymentStatusFAILED,
+		PaymentStatusREJECTED:
+		return true
+	}
+	return false
 }
 
 type PaymentType string
@@ -122,8 +147,8 @@ func (e *PaymentType) Scan(src interface{}) error {
 }
 
 type NullPaymentType struct {
-	PaymentType PaymentType
-	Valid       bool // Valid is true if PaymentType is not NULL
+	PaymentType PaymentType `json:"payment_type"`
+	Valid       bool        `json:"valid"` // Valid is true if PaymentType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -142,6 +167,15 @@ func (ns NullPaymentType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.PaymentType), nil
+}
+
+func (e PaymentType) Valid() bool {
+	switch e {
+	case PaymentTypeUPISS,
+		PaymentTypeGATEWAY:
+		return true
+	}
+	return false
 }
 
 type Permissions string
@@ -174,8 +208,8 @@ func (e *Permissions) Scan(src interface{}) error {
 }
 
 type NullPermissions struct {
-	Permissions Permissions
-	Valid       bool // Valid is true if Permissions is not NULL
+	Permissions Permissions `json:"permissions"`
+	Valid       bool        `json:"valid"` // Valid is true if Permissions is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -194,6 +228,25 @@ func (ns NullPermissions) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.Permissions), nil
+}
+
+func (e Permissions) Valid() bool {
+	switch e {
+	case PermissionsMANAGEEVENTS,
+		PermissionsCREATEEVENT,
+		PermissionsEDITEVENT,
+		PermissionsDELETEEVENT,
+		PermissionsVIEWEVENT,
+		PermissionsMANAGEBOOKINGS,
+		PermissionsCREATEBOOKING,
+		PermissionsEDITBOOKING,
+		PermissionsDELETEBOOKING,
+		PermissionsVIEWBOOKING,
+		PermissionsMANAGEUSERS,
+		PermissionsVIEWREPORTS:
+		return true
+	}
+	return false
 }
 
 type SuperUserRole string
@@ -217,8 +270,8 @@ func (e *SuperUserRole) Scan(src interface{}) error {
 }
 
 type NullSuperUserRole struct {
-	SuperUserRole SuperUserRole
-	Valid         bool // Valid is true if SuperUserRole is not NULL
+	SuperUserRole SuperUserRole `json:"super_user_role"`
+	Valid         bool          `json:"valid"` // Valid is true if SuperUserRole is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -237,6 +290,16 @@ func (ns NullSuperUserRole) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.SuperUserRole), nil
+}
+
+func (e SuperUserRole) Valid() bool {
+	switch e {
+	case SuperUserRoleSUPERADMIN,
+		SuperUserRoleADMIN,
+		SuperUserRoleEDITOR:
+		return true
+	}
+	return false
 }
 
 type TicketStatus string
@@ -261,8 +324,8 @@ func (e *TicketStatus) Scan(src interface{}) error {
 }
 
 type NullTicketStatus struct {
-	TicketStatus TicketStatus
-	Valid        bool // Valid is true if TicketStatus is not NULL
+	TicketStatus TicketStatus `json:"ticket_status"`
+	Valid        bool         `json:"valid"` // Valid is true if TicketStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -283,92 +346,104 @@ func (ns NullTicketStatus) Value() (driver.Value, error) {
 	return string(ns.TicketStatus), nil
 }
 
+func (e TicketStatus) Valid() bool {
+	switch e {
+	case TicketStatusBOOKED,
+		TicketStatusCANCELLED,
+		TicketStatusTIMEOUT,
+		TicketStatusFAILED:
+		return true
+	}
+	return false
+}
+
 type Booking struct {
-	ID        pgtype.UUID
-	EventID   pgtype.UUID
-	UserID    pgtype.UUID
-	CouponID  pgtype.UUID
-	Status    BookingStatus
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	EventID   pgtype.UUID        `json:"event_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	CouponID  pgtype.UUID        `json:"coupon_id"`
+	Status    BookingStatus      `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Coupon struct {
-	ID                 pgtype.UUID
-	EventID            pgtype.UUID
-	Code               string
-	DiscountPercentage float64
-	ValidFrom          pgtype.Timestamptz
-	ValidUntil         pgtype.Timestamptz
-	UsageLimit         int32
-	CreatedAt          pgtype.Timestamptz
-	UpdatedAt          pgtype.Timestamptz
+	ID                 pgtype.UUID        `json:"id"`
+	EventID            pgtype.UUID        `json:"event_id"`
+	Code               string             `json:"code"`
+	DiscountPercentage float64            `json:"discount_percentage"`
+	ValidFrom          pgtype.Timestamptz `json:"valid_from"`
+	ValidUntil         pgtype.Timestamptz `json:"valid_until"`
+	UsageLimit         int32              `json:"usage_limit"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Event struct {
-	ID             pgtype.UUID
-	Title          string
-	Description    string
-	Banner         string
-	Icon           string
-	AdminID        pgtype.UUID
-	StartTime      pgtype.Timestamptz
-	EndTime        pgtype.Timestamptz
-	Location       pgtype.Text
-	TotalSeats     int32
-	AvailableSeats int32
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	Slug           string
+	ID             pgtype.UUID        `json:"id"`
+	Title          string             `json:"title"`
+	Description    string             `json:"description"`
+	Banner         string             `json:"banner"`
+	Icon           string             `json:"icon"`
+	AdminID        pgtype.UUID        `json:"admin_id"`
+	StartTime      pgtype.Timestamptz `json:"start_time"`
+	EndTime        pgtype.Timestamptz `json:"end_time"`
+	Location       pgtype.Text        `json:"location"`
+	TotalSeats     int32              `json:"total_seats"`
+	AvailableSeats int32              `json:"available_seats"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	Slug           string             `json:"slug"`
 }
 
 type Payment struct {
-	ID       pgtype.UUID
-	Amount   float64
-	Type     PaymentType
-	Status   PaymentStatus
-	EventID  pgtype.UUID
-	UserID   pgtype.UUID
-	TicketID pgtype.UUID
+	ID       pgtype.UUID   `json:"id"`
+	Amount   float64       `json:"amount"`
+	Type     PaymentType   `json:"type"`
+	Status   PaymentStatus `json:"status"`
+	EventID  pgtype.UUID   `json:"event_id"`
+	UserID   pgtype.UUID   `json:"user_id"`
+	TicketID pgtype.UUID   `json:"ticket_id"`
 }
 
 type SuperUser struct {
-	ID          pgtype.UUID
-	Email       string
-	Password    string
-	Role        SuperUserRole
-	Permissions []Permissions
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Username    string
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Role        SuperUserRole      `json:"role"`
+	Permissions []Permissions      `json:"permissions"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	Username    string             `json:"username"`
+	Name        string             `json:"name"`
 }
 
 type Ticket struct {
-	ID         pgtype.UUID
-	Price      float64
-	Status     TicketStatus
-	EventID    pgtype.UUID
-	UserID     pgtype.UUID
-	TicketType pgtype.UUID
-	BookingID  pgtype.UUID
-	QrCode     pgtype.Text
+	ID         pgtype.UUID  `json:"id"`
+	Price      float64      `json:"price"`
+	Status     TicketStatus `json:"status"`
+	EventID    pgtype.UUID  `json:"event_id"`
+	UserID     pgtype.UUID  `json:"user_id"`
+	TicketType pgtype.UUID  `json:"ticket_type"`
+	BookingID  pgtype.UUID  `json:"booking_id"`
+	QrCode     pgtype.Text  `json:"qr_code"`
 }
 
 type TicketType struct {
-	ID               pgtype.UUID
-	Name             string
-	EventID          pgtype.UUID
-	Price            float64
-	AvailableTickets int32
+	ID               pgtype.UUID `json:"id"`
+	Name             string      `json:"name"`
+	EventID          pgtype.UUID `json:"event_id"`
+	Price            float64     `json:"price"`
+	AvailableTickets int32       `json:"available_tickets"`
 }
 
 type User struct {
-	ID        pgtype.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
-	Verified  bool
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	FirstName string             `json:"first_name"`
+	LastName  string             `json:"last_name"`
+	Email     string             `json:"email"`
+	Password  string             `json:"password"`
+	Verified  bool               `json:"verified"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

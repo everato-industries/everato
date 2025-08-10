@@ -88,6 +88,10 @@ func (s *Server) initializeRoutes() {
 	api.NewHealthCheckHandler().RegisterRoutes(apivx)
 	api.NewMetricsHandler().RegisterRoutes(apivx)
 
+	// Route Group: Admin
+	// Admin login, creation and RBAC control
+	api.NewAdminHandler(s.Cfg).RegisterRoutes(apivx)
+
 	// Route Group: Authentication
 	// User registration, login, verification, etc.
 	api.NewAuthHandler(s.Cfg).RegisterRoutes(apivx)
@@ -148,4 +152,18 @@ func (s *Server) Start() error {
 	// Start the HTTP server with the configured router
 	// This call is blocking and will only return on error
 	return http.ListenAndServe(addr, s.Router)
+}
+
+// Stop gracefully stops the server.
+//
+// This will recieve a shutdown signal and perform any necessary cleanup.
+//
+// @TODO
+func (s *Server) Stop(close_chan chan int) {
+	logger := pkg.NewLogger()
+	defer logger.Close() // Ensure the logger is closed when the server is done
+
+	// Perform any necessary cleanup here, such as closing database connections, etc.
+	logger.Info("Server is stopping gracefully")
+	// Currently, there's no specific cleanup logic, but this is where it would go
 }
