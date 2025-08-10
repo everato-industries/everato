@@ -3,6 +3,7 @@
 package event
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
@@ -136,7 +137,7 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 	// Generate a URL-friendly slug from the event title
 	// This will be used in event URLs and must be unique across all events
 	slug, err := utils.GenerateSlug(eventDTO.Title)
-	if slug == "" && err != nil {
+	if err != nil {
 		logger.StdoutLogger.Error("Failed to generate slug", "err", err.Error())
 		wr.Status(http.StatusInternalServerError).Json(
 			utils.M{
@@ -160,22 +161,37 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		return
 	}
 
-	// Handle case where the slug search failed for a reason other than "not found"
-	// This indicates a database error rather than a slug uniqueness issue
-	if err != pgx.ErrNoRows {
-		logger.StdoutLogger.Error("Failed to create event", "err", err.Error())
-		wr.Status(http.StatusInternalServerError).Json(
+	// // Handle case where the slug search failed for a reason other than "not found"
+	// // This indicates a database error rather than a slug uniqueness issue
+	// if err != pgx.ErrNoRows {
+	// 	logger.StdoutLogger.Error("Failed to create event", "err", err.Error())
+	// 	wr.Status(http.StatusInternalServerError).Json(
+	// 		utils.M{
+	// 			"message": "Internal server error, please try again later.",
+	// 			"err":     err.Error(),
+	// 		},
+	// 	)
+	// 	return
+	// }
+
+	// Create the event in the database using the transaction
+	// This converts our DTO to the format required by the repository
+	params, err := eventDTO.ToCreateEventParams(slug)
+	if err != nil {
+		logger.StdoutLogger.Error("Failed to prepare event parameters", "err", err.Error())
+		tx.Rollback(wr.R.Context()) // Rollback the transaction
+		wr.Status(http.StatusBadRequest).Json(
 			utils.M{
-				"message": "Internal server error, please try again later.",
+				"message": "Invalid event data format",
 				"err":     err.Error(),
 			},
 		)
 		return
 	}
 
-	// Create the event in the database using the transaction
-	// This converts our DTO to the format required by the repository
-	event, err := repo.WithTx(tx).CreateEvent(wr.R.Context(), eventDTO.ToCreateEventParams())
+	fmt.Printf("%+v", params)
+
+	event, err := repo.WithTx(tx).CreateEvent(wr.R.Context(), params)
 	// Handle any other errors that might have occurred during event creation
 	// This is a catch-all for unexpected issues
 	if err != nil {
@@ -184,18 +200,6 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		wr.Status(http.StatusInternalServerError).Json(
 			utils.M{
 				"message": "Failed to create event, please try again later.",
-				"err":     err.Error(),
-			},
-		)
-		return
-	}
-
-	if err != nil {
-		logger.StdoutLogger.Error("Failed to create the event", "err", err.Error())
-		tx.Rollback(wr.R.Context()) // Rollback the transaction
-		wr.Status(http.StatusInternalServerError).Json(
-			utils.M{
-				"message": "Internal server error, please try again later.",
 				"err":     err.Error(),
 			},
 		)

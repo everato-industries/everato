@@ -6,8 +6,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -52,26 +54,76 @@ func StringToUUID(s string) (pgtype.UUID, error) {
 	return uuid, nil
 }
 
-// StringToTime converts a string representation of time in RFC3339/ISO8601 format
+// StringToTime converts a string representation of time in various formats
 // to a pgtype.Timestamptz type for use with PostgreSQL.
 //
+// Supported formats include:
+// - RFC3339 (e.g., "2023-04-01T15:30:00Z")
+// - ISO8601 with timezone (e.g., "2023-04-01T15:30:00+05:30")
+// - ISO8601 without timezone (e.g., "2023-04-01T15:30:00")
+// - Date only (e.g., "2023-04-01")
+// - Common formats with named timezones (e.g., "2023-04-01 15:30:00 GMT")
+//
 // Parameters:
-//   - s: The string representation of time (e.g., "2023-04-01T15:30:00Z")
+//   - s: The string representation of time
 //
 // Returns:
 //   - A pgtype.Timestamptz object if successful
 //   - An error if the string cannot be parsed as a valid timestamp
 func StringToTime(s string) (pgtype.Timestamptz, error) {
 	t := pgtype.Timestamptz{}
-	err := t.Scan(s)
 
-	// In case of error in parsing return an empty time struct
-	if err != nil {
-		return pgtype.Timestamptz{}, err
+	// Define a list of time formats to try
+	formats := []string{
+		time.RFC3339,                // "2006-01-02T15:04:05Z07:00"
+		"2006-01-02T15:04:05",       // ISO8601 without timezone
+		"2006-01-02 15:04:05",       // Common datetime format
+		"2006-01-02 15:04:05 MST",   // With named timezone
+		"2006-01-02 15:04:05 -0700", // With numeric timezone
+		"2006-01-02",                // Date only
+		time.RFC1123,                // "Mon, 02 Jan 2006 15:04:05 MST"
+		time.RFC1123Z,               // "Mon, 02 Jan 2006 15:04:05 -0700"
+		time.RFC822,                 // "02 Jan 06 15:04 MST"
+		time.RFC822Z,                // "02 Jan 06 15:04 -0700"
 	}
 
-	// Other wise return the time
+	var parsedTime time.Time
+	var err error
+	var lastError error
+
+	// Try each format until we find one that works
+	for _, format := range formats {
+		parsedTime, err = time.Parse(format, s)
+		if err == nil {
+			// If parsing succeeds, break the loop
+			break
+		}
+		lastError = err
+	}
+
+	// If none of the formats worked, return the last error
+	if err != nil {
+		return pgtype.Timestamptz{}, fmt.Errorf("could not parse time '%s' in any supported format: %w", s, lastError)
+	}
+
+	// Set the Timestamptz value using the parsed time
+	t.Time = parsedTime
+	if err != nil {
+		return pgtype.Timestamptz{}, fmt.Errorf("failed to convert parsed time to pgtype.Timestamptz: %w", err)
+	}
+
 	return t, nil
+}
+
+func RFCTimeToTimeStampZ(t time.Time) (pgtype.Timestamptz, error) {
+	// Create a new Timestamptz object
+	tz := pgtype.Timestamptz{}
+
+	// Set the time value
+	tz.Time = t
+
+	// Other wise return the time
+	return tz, nil
 }
 
 // StringToText converts a string to a pgtype.Text value for PostgreSQL compatibility.

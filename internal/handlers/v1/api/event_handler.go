@@ -57,7 +57,7 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	events := router.PathPrefix(h.BasePath).Subrouter()
 
 	// Create the AuthGuard
-	guard := middlewares.NewAuthMiddleware(h.Repo, h.Conn, false)
+	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
 	events.Use(guard.Guard) // Guard the whole route group
 
 	// Routes
