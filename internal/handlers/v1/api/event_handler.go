@@ -83,9 +83,14 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Create a subrouter for all event routes
 	events := router.PathPrefix(h.BasePath).Subrouter()
 
+<<<<<<< HEAD
 	// Apply authentication middleware to all event routes
 	// Uses JSON responses for auth failures instead of redirects
 	guard := middlewares.NewAuthMiddleware(h.Repo, h.Conn, false)
+=======
+	// Create the AuthGuard
+	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
+>>>>>>> c76bf47 (feat(code): working on event creation, although that is not fully working)
 	events.Use(guard.Guard) // Guard the whole route group
 
 	// Register individual route handlers
