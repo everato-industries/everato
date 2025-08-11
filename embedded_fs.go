@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // PublicFS serves public files (CSS, JS, images) from the embedded filesystem in production.
@@ -29,7 +30,7 @@ import (
 // Returns:
 //   - An http.Handler that serves embedded static files
 
-//go:embed public
+//go:embed www/public
 var publicFS embed.FS
 
 func PublicFS() http.Handler {
@@ -40,6 +41,35 @@ func PublicFS() http.Handler {
 
 	// Return a file server that serves files from the embedded filesystem
 	return http.FileServer(http.FS(fs))
+}
+
+//go:embed www/dist
+var viewsFS embed.FS
+
+func ViewsFS() http.Handler {
+	sub, err := fs.Sub(viewsFS, "www/dist")
+	if err != nil {
+		panic("Failed to create sub filesystem: " + err.Error())
+	}
+	fsys := http.FS(sub)
+	fsHandler := http.FileServer(fsys)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cleanPath := strings.TrimPrefix(r.URL.Path, "/")
+		if f, err := fsys.Open(cleanPath); err == nil {
+			if info, _ := f.Stat(); info != nil && !info.IsDir() {
+				fsHandler.ServeHTTP(w, r)
+				return
+			}
+		}
+		index, err := fsys.Open("index.html")
+		if err != nil {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+		info, _ := index.Stat()
+		http.ServeContent(w, r, "index.html", info.ModTime(), index)
+	})
 }
 
 //go:embed internal/db/migrations/*.sql

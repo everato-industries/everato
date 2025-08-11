@@ -14,7 +14,6 @@ import (
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/handlers/v1/api"
-	"github.com/dtg-lucifer/everato/internal/handlers/v1/views"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
 	"github.com/dtg-lucifer/everato/pkg"
 	"github.com/gorilla/mux"
@@ -46,7 +45,6 @@ func NewServer(cfg *config.Config) *Server {
 	}
 
 	server.initializeStaticFS()    // Initialize the static file system to serve files
-	server.initializeViews()       // Initialize the handlers to handle the html views
 	server.initializeMiddlewares() // Initialize the middlewares for the server
 	server.initializeRoutes()      // Initialize the routes for the server
 
@@ -116,24 +114,9 @@ func (s *Server) initializeRoutes() {
 func (s *Server) initializeStaticFS() {
 	// Serve static files from the public directory
 	// The PublicFS() function is defined differently in dev/prod builds
-	s.Router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", PublicFS()))
-}
-
-// initializeViews sets up the server-side rendering routes for the application.
-// These routes serve HTML pages rendered using the templ templating engine.
-//
-// View routes:
-// - Root (/): Home page and general site pages
-// - Auth (/auth): Authentication-related pages (login, register, etc.)
-// - Events (/events): Event browsing and detail pages
-func (s *Server) initializeViews() {
-	// Create a subrouter for all view routes starting at the root path
-	view_router := s.Router.PathPrefix("/").Subrouter()
-
-	// Register view handlers for different sections of the application
-	views.NewViewsHandler("/").RegisterRoutes(view_router)       // Home and general pages
-	views.NewAuthHandler("/auth").RegisterRoutes(view_router)    // Authentication pages
-	views.NewEventHandler("/events").RegisterRoutes(view_router) // Event pages
+	s.Router.PathPrefix("/public").Handler(http.StripPrefix("/public", PublicFS()))
+	// Serve the static UI from the dist directory
+	s.Router.PathPrefix("/www").Handler(http.StripPrefix("/www", ViewsFS()))
 }
 
 // Start begins listening for HTTP requests on the configured port.

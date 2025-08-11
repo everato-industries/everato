@@ -31,6 +31,26 @@ func PublicFS() http.Handler {
 	return http.FileServer(http.Dir("public"))
 }
 
+// ViewsFS serves the built frontend files from the "www/dist" directory.
+// This handler serves static files like HTML, CSS, and JavaScript from the
+// "www/dist" directory, which is typically the output of a frontend build process.
+//
+// Returns:
+//   - An http.Handler that serves files from the live filesystem
+func ViewsFS() http.Handler {
+	distDir := "www/dist"
+	fs := http.FileServer(http.Dir(distDir))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(distDir, r.URL.Path)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(distDir, "index.html"))
+	})
+}
+
 // MigrationsFS returns the on-disk migration filesystem for development use.
 // It locates the migrations directory and returns an fs.FS interface for accessing
 // SQL migration files directly from disk, enabling easy development and testing.

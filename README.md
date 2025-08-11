@@ -1,17 +1,17 @@
 # Everato - Modern Event Management Platform
 
-**Everato** is a comprehensive event management platform designed as a monolithic, server-side rendered application. Built with modern Go technology, Everato provides a complete solution for event creation, management, ticketing, and analytics in a single, efficient binary.
+**Everato** is a comprehensive event management platform built with a decoupled architecture consisting of a Go backend API and a React frontend. It provides a complete solution for event creation, management, ticketing, and analytics with an interactive, modern user interface.
 
 ## Overview
 
-Everato combines all functionality into a cohesive platform that handles everything from event creation to analytics, ticketing systems, payment processing, and administration through a unified, server-side rendered interface.
+Everato combines a powerful Go backend API with a modern React frontend to create a cohesive platform that handles everything from event creation to analytics, ticketing systems, payment processing, and administration through an interactive, responsive interface.
 
 ![Everato Platform Overview](public/static/arch_00.png)
 
 ## Key Features
 
-- **Single Binary Deployment**: The entire application runs from a single Go binary with an external configuration file, making deployment and scaling simple.
-- **Server-Side Rendering**: Fast, SEO-friendly pages with reduced client-side JavaScript requirements.
+- **Decoupled Architecture**: Clean separation between Go backend API and React frontend.
+- **Single Page Application**: Fast, interactive UI with client-side routing and state management.
 - **Event Management**: Create, update, and manage events with customizable fields.
 - **Ticketing System**: Flexible ticket types, pricing tiers, and inventory management.
 - **User Management**: Comprehensive user registration, authentication, and profile management.
@@ -22,8 +22,8 @@ Everato combines all functionality into a cohesive platform that handles everyth
 
 ## Architecture Highlights
 
-- **Monolithic Design**: All components are integrated into a single application, eliminating microservice complexity.
-- **SSR Performance**: Server-side rendering delivers faster initial page loads and improved SEO.
+- **API-First Design**: Clean separation of concerns with RESTful API endpoints.
+- **React Frontend**: Interactive single-page application with client-side routing.
 - **Event Bus**: Internal event processing using Kafka for reliable asynchronous operations.
 - **Database Integration**: Direct PostgreSQL connectivity with migration tooling.
 - **Comprehensive Logging**: Structured logging for monitoring and debugging.
@@ -35,9 +35,9 @@ Everato combines all functionality into a cohesive platform that handles everyth
 - **Database**: PostgreSQL with pgx driver
 - **ORM/Query**: SQLC for type-safe SQL
 - **Messaging**: Kafka & Zookeeper
-- **Frontend**: Server-side rendered templates with minimal JavaScript
+- **Frontend**: React with TypeScript
 - **UI Framework**: TailwindCSS for styling
-- **Templating**: Templ for type-safe HTML templates
+- **Build Tool**: Vite for fast development and optimized builds
 - **Authentication**: JWT-based authentication
 - **Development**: Docker for local development environment, Air for hot reloading
 
@@ -90,7 +90,7 @@ Everato combines all functionality into a cohesive platform that handles everyth
     make migrate-up
     ```
 
-6. Run the application:
+6. Run the backend application:
 
     ```
     # For development with hot reload
@@ -99,6 +99,19 @@ Everato combines all functionality into a cohesive platform that handles everyth
     # For production build
     make build
     ./bin/everato
+    ```
+
+7. Run the React frontend:
+
+    ```
+    # Navigate to frontend directory
+    cd www
+
+    # Install dependencies
+    pnpm install
+
+    # Start development server
+    pnpm dev
     ```
 
 ## Development
@@ -138,13 +151,15 @@ Everato follows a well-organized directory structure that separates concerns and
 ```
 everato/
 ├── assets/                # Project assets like architecture diagrams
-├── components/            # UI components for templ rendering
 ├── config/                # Configuration management
 ├── docker/                # Docker-related files for development
 │   ├── init/              # Database initialization scripts
 │   ├── Dockerfile         # Production Docker image definition
 │   ├── prometheus.yml     # Prometheus configuration
 │   └── promtail-config.yaml # Promtail configuration
+├── docs/                  # Project documentation
+│   ├── ARCHITECTURE.md    # System architecture documentation
+│   └── FRONTEND.md        # Frontend implementation details
 ├── internal/              # Private application code
 │   ├── db/                # Database-related code
 │   │   ├── migrations/    # SQL migration files
@@ -154,8 +169,7 @@ everato/
 │   ├── handlers/          # HTTP request handlers
 │   │   ├── handler_interface.go  # Common interface for all handlers
 │   │   └── v1/            # API version 1 handlers
-│   │       ├── api/       # REST API endpoints
-│   │       └── views/     # Server-side rendered views
+│   │       └── api/       # REST API endpoints
 │   ├── middlewares/       # HTTP middleware components
 │   │   ├── authguard_middleware.go  # Authentication middleware
 │   │   ├── cors_middleware.go       # CORS handling
@@ -170,19 +184,23 @@ everato/
 │       ├── handler_utils.go  # Handler utilities
 │       ├── http_utils.go     # HTTP utilities
 │       └── utils.go          # General utilities
-├── pages/                 # Page templates (templ)
 ├── pkg/                   # Shared public libraries
 │   ├── jwt.go             # JWT handling
 │   ├── logger.go          # Application logger
 │   └── template.go        # Template utilities
 ├── public/                # Static assets (served directly)
-│   ├── css/               # Compiled CSS files
-│   └── js/                # JavaScript files
 ├── scripts/               # Utility scripts for database management
-├── styles/                # Source CSS files (TailwindCSS)
-└── templates/             # HTML templates
-    ├── mail/              # Email templates
-    └── views/             # View templates
+├── templates/             # Email templates
+│   └── mail/              # Email templates
+└── www/                   # React frontend application
+    ├── public/            # Static frontend assets
+    └── src/               # React source code
+        ├── assets/        # Frontend assets
+        ├── components/    # React components
+        ├── pages/         # Page components
+        ├── app.tsx        # Main application component
+        ├── routes.tsx     # React Router configuration
+        └── main.tsx       # Application entry point
 ```
 
 ### Key Files
@@ -195,6 +213,8 @@ everato/
 - `config.yaml` - Application configuration
 - `Makefile` - Development and build commands
 - `.air.toml` - Configuration for hot reloading
+- `www/src/main.tsx` - React application entry point
+- `www/src/routes.tsx` - React Router configuration
 
 ### File Responsibilities
 
@@ -217,17 +237,17 @@ everato/
 - `internal/middlewares/*.go` - HTTP middleware components
 - `internal/services/*.go` - Business logic implementation
 
-#### View Rendering
+#### Frontend Implementation
 
-- `components/*.templ` - Reusable UI components
-- `pages/*.templ` - Page templates
-- `templates/views/*.html` - Traditional HTML templates
+- `www/src/components/*.tsx` - Reusable React components
+- `www/src/pages/*.tsx` - React page components
+- `www/src/routes.tsx` - React Router configuration
 
 #### Frontend Assets
 
-- `styles/root.css` - Source CSS using TailwindCSS
-- `public/css/styles.css` - Compiled CSS
-- `public/js/script.js` - Client-side JavaScript
+- `www/src/index.css` - Global CSS with Tailwind imports
+- `www/public/` - Static assets for the frontend
+- `www/src/assets/` - Assets processed through Vite
 
 ### Development Workflow
 
@@ -240,8 +260,8 @@ everato/
     - Apply migrations with `make migrate-up`
 
 2. **Development Cycle**
-    - Run the application with hot reloading: `make dev`
-    - For UI changes, use `make watch` to automatically rebuild templates and CSS
+    - Run the backend with hot reloading: `make dev`
+    - Run the frontend development server: `cd www && pnpm dev`
     - Create database migrations: `make migrate-new`
     - Seed test data: `make seed`
     - Format code: `make fmt`
@@ -251,21 +271,26 @@ everato/
     - Business logic lives in `internal/services/`
     - HTTP handlers only handle request/response, delegating to services
     - Database queries are defined in SQL and generated with SQLC
-    - UI components use the templ templating language for type-safe HTML
+    - React components in `www/src/components/` and pages in `www/src/pages/`
     - Configuration is loaded from both environment variables and config files
     - DTOs (Data Transfer Objects) handle data validation and transformation
     - Structured logging for traceability and monitoring
     - Middleware-based HTTP request processing
 
 4. **Build Modes**
-    - **Development Mode**: Uses file system directly for live reloading
+    - **Backend Development Mode**: Uses file system directly for live reloading
         - Build with `-tags=dev` flag
         - Reads templates and migrations from disk
         - Enables hot reloading via Air
-    - **Production Mode**: Embeds static assets into binary
+    - **Backend Production Mode**: Embeds static assets into binary
         - Build without tags for a self-contained binary
         - Templates and migrations embedded in executable
-        - Single binary deployment with config file
+    - **Frontend Development Mode**:
+        - Vite dev server with hot module replacement
+        - Proxies API requests to backend
+    - **Frontend Production Mode**:
+        - Built with `pnpm build` to generate optimized static assets
+        - Served by the Go backend in production
 
 5. **API Structure**
     - REST API endpoints under `/api/v1/`
@@ -294,24 +319,27 @@ everato/
 
 ## Deployment
 
-Everato can be deployed as a single binary with an accompanying configuration file:
+Everato can be deployed as a backend binary with frontend static assets:
 
 1. Build for production:
 
     ```
     make build
+    cd www && pnpm build
     ```
 
-2. Copy the binary and configuration file to your server:
+2. Copy the binary, configuration file, and frontend build to your server:
 
     ```
-    scp bin/everato config.yaml user@your-server:/path/to/deployment/
+    scp -r bin/everato config.yaml www/dist/ user@your-server:/path/to/deployment/
     ```
 
 3. Run the application:
     ```
     ./everato -config config.yaml
     ```
+
+The backend will serve the React frontend static files alongside the API endpoints.
 
 ## Contributing
 
