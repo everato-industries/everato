@@ -23,6 +23,7 @@ MIGRATIONS_DIR ?= internal/db/migrations
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GOFMT := gofmt -s
 GOFLAGS := -mod=readonly
+GOTAGS := -tags=prod
 
 ## Default target
 all: build
@@ -76,11 +77,15 @@ golang-migrate:
 .PHONY: golang-migrate
 
 ## Build the Go project
-build:
+build: clean
+	@echo ">> Building the UI..."
+	cd www && \
+		pnpm install && \
+		pnpm run build && \
+	cd ..
 	@echo ">> Building binary..."
 	mkdir -p $(BIN_DIR)
-	$(TEMPL) generate
-	$(GO) build -o $(BIN_FILE) $(CMD_PATH)
+	$(GO) build -o $(BIN_FILE) $(GOTAGS) $(CMD_PATH)
 .PHONY: build
 
 ## Run the server

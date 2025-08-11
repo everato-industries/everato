@@ -7,24 +7,28 @@ args_bin = []
 bin = "./bin/everato"
 cmd = "go build -o ./bin/everato -tags=dev ."
 delay = 1000
-exclude_dir = ["assets", "vendor", "testdata", "logs"]
+exclude_dir = [
+    "assets",
+    "vendor",
+    "testdata",
+    "logs",
+    "www/dist",
+    "www/node_modules",
+]
 exclude_file = []
-exclude_regex = ["_test.go", ".log", "_templ.go"]
+exclude_regex = ["_test.go", ".log", "www/dist"]
 exclude_unchanged = false
 follow_symlink = false
 full_bin = ""
 include_dir = []
-include_ext = ["go", "html", "css"]
+include_ext = ["go", "html", "css", "tsx", "ts", "js", "json", "md"]
 include_file = []
 kill_delay = "0s"
 log = "./logs/build-errors.log"
 poll = false
 poll_interval = 0
 post_cmd = []
-pre_cmd = [
-    "templ generate",
-    "./bin/tailwind -i ./styles/root.css -o ./public/css/styles.css",
-]
+pre_cmd = ["cd www && pnpm build && cd .."]
 rerun = false
 rerun_delay = 500
 send_interrupt = false
