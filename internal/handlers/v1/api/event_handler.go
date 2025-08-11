@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
@@ -30,6 +31,7 @@ type EventHandler struct {
 	Repo     *repository.Queries // Database repository for event operations
 	Conn     *pgx.Conn           // Database connection for transactions
 	BasePath string              // Base URL path for event endpoints
+	Cfg      *config.Config      // Application configuration
 }
 
 // -----------------------------------------------------
@@ -42,7 +44,7 @@ var _ handlers.Handler = (*EventHandler)(nil) // Assert the interface implementa
 // Returns:
 //   - A fully initialized EventHandler, or partially initialized handler if DB connection fails
 //     (in which case the Repo field will be nil)
-func NewEventHandler() *EventHandler {
+func NewEventHandler(cfg *config.Config) *EventHandler {
 	logger := pkg.NewLogger()
 	defer logger.Close()
 
@@ -80,15 +82,16 @@ func NewEventHandler() *EventHandler {
 func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Create a subrouter for all event routes
 	events := router.PathPrefix(h.BasePath).Subrouter()
+	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodGet) // Get all events with filtering
 
 	// Create the AuthGuard
 	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
-	events.Use(guard.Guard) // Guard the whole route group
+	protected := events.NewRoute().Subrouter()
+	protected.Use(guard.Guard) // Guard the whole route group
 
 	// Register individual route handlers
-	events.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
-	events.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an existing event
-	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodPost)   // Get all events with filtering
+	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
+	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an existing event
 }
 
 // CreateEvent handles requests to create a new event in the system.
@@ -157,5 +160,20 @@ func (h *EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 //   - 401 Unauthorized if user is not authenticated
 //   - 502 Bad Gateway if database connection fails
 func (h *EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement event listing functionality
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	// This ensures the handler can't proceed without a valid database connection
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// Delegate event creation to the service layer
+	// This separates HTTP handling from business logic
+	event.GetAllEvents(wr, h.Repo, h.Conn)
 }
