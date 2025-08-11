@@ -6,7 +6,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
@@ -36,7 +35,6 @@ type EventHandler struct {
 // -----------------------------------------------------
 var _ handlers.Handler = (*EventHandler)(nil) // Assert the interface implementation to catch errors
 // -----------------------------------------------------
-
 
 // NewEventHandler creates and initializes a new EventHandler instance.
 // It establishes a database connection and initializes the repository for event operations.
@@ -83,14 +81,8 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Create a subrouter for all event routes
 	events := router.PathPrefix(h.BasePath).Subrouter()
 
-<<<<<<< HEAD
-	// Apply authentication middleware to all event routes
-	// Uses JSON responses for auth failures instead of redirects
-	guard := middlewares.NewAuthMiddleware(h.Repo, h.Conn, false)
-=======
 	// Create the AuthGuard
 	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
->>>>>>> c76bf47 (feat(code): working on event creation, although that is not fully working)
 	events.Use(guard.Guard) // Guard the whole route group
 
 	// Register individual route handlers
