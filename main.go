@@ -1,9 +1,10 @@
 /*
-Everato - Modern Event Management Platform
+ * Everato - Modern Event Management Platform
+ *
+ * This is the main entry point for the Everato application.
+ * It initializes configuration, runs database migrations, and starts the HTTP server.
+ */
 
-This is the main entry point for the Everato application.
-It initializes configuration, runs database migrations, and starts the HTTP server.
-*/
 package main
 
 import (
@@ -13,10 +14,10 @@ import (
 )
 
 // main is the application's entry point. It performs the following operations:
-// 1. Loads environment variables from .env file
-// 2. Loads application configuration from config.yaml
-// 3. Runs database migrations to ensure schema is up-to-date
-// 4. Initializes and starts the HTTP server
+//   - 1. Loads environment variables from .env file
+//   - 2. Loads application configuration from config.yaml
+//   - 3. Runs database migrations to ensure schema is up-to-date
+//   - 4. Initializes and starts the HTTP server
 func main() {
 	logger := pkg.NewLogger()
 	// Load environment variables from .env file

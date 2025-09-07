@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
@@ -11,8 +14,6 @@ import (
 	"github.com/dtg-lucifer/everato/internal/services/admin"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 )
 
 // AdminHandler handles administrative operations for the Everato platform.
