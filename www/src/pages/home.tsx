@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../lib/api";
 import Layout from "../components/layout";
 
 interface Event {
@@ -21,11 +22,8 @@ export default function HomePage() {
         async function fetchData() {
             try {
                 // Health check
-                const healthResponse = await fetch("/api/v1/health");
-                if (healthResponse.ok) {
-                    const healthData = await healthResponse.json();
-                    console.log("Health check:", healthData);
-                }
+                const healthResponse = await api.get("/health");
+                console.log("Health check:", healthResponse.data);
 
                 // Mock events data for now
                 setTimeout(() => {

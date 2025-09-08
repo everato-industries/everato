@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import api from "../../lib/api";
 import Layout from "../../components/layout";
 
 interface RegisterFormData {
@@ -8,10 +10,6 @@ interface RegisterFormData {
     email: string;
     password: string;
     confirmPassword: string;
-}
-
-interface ApiError {
-    message: string;
 }
 
 export default function RegisterPage() {
@@ -60,32 +58,25 @@ export default function RegisterPage() {
         }
 
         try {
-            const response = await fetch("/api/v1/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    password: formData.password,
-                }),
+            await api.post("/auth/register", {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Registration failed");
-            }
 
             setSuccess(true);
             setTimeout(() => {
                 navigate("/auth/login");
             }, 2000);
         } catch (err) {
-            const error = err as ApiError;
-            setError(error.message || "An error occurred during registration");
+            let errorMessage = "An error occurred during registration";
+            if (axios.isAxiosError(err)) {
+                errorMessage = err.response?.data?.message || err.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }

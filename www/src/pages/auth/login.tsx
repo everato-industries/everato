@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import api from "../../lib/api";
 import Layout from "../../components/layout";
 
 interface LoginFormData {
     email: string;
     password: string;
-}
-
-interface ApiError {
-    message: string;
 }
 
 export default function LoginPage() {
@@ -36,19 +34,8 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const response = await fetch("/api/v1/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Login failed");
-            }
+            const response = await api.post("/auth/login", formData);
+            const data = response.data;
 
             // Store token and user info
             if (data.token) {
@@ -59,8 +46,13 @@ export default function LoginPage() {
                 throw new Error("No token received");
             }
         } catch (err) {
-            const error = err as ApiError;
-            setError(error.message || "An error occurred during login");
+            let errorMessage = "An error occurred during login";
+            if (axios.isAxiosError(err)) {
+                errorMessage = err.response?.data?.message || err.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
