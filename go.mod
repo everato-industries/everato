@@ -3,7 +3,6 @@ module github.com/dtg-lucifer/everato
 go 1.24.1
 
 require (
-	github.com/a-h/templ v0.3.906
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.3

@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
 )
 
 // LoginUser handles the authentication process for existing users.
@@ -151,7 +152,7 @@ func LoginUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
 	token, err := signer.Sign(jwt.MapClaims{
 		"sub": fmt.Sprintf("jwt_login_user_id_%s", user.ID.String()),
 		"aud": fmt.Sprintf("jwt_login_user_name_%s", user.FirstName),
-		"iss": fmt.Sprintf("%s", utils.GetEnv("APP_NAME", "everato")),
+		"iss": utils.GetEnv("APP_NAME", "everato"),
 		"iat": jwt.NewNumericDate(time.Now()),
 		"exp": jwt.NewNumericDate(exp_time),
 		"uid": user.ID.String(),

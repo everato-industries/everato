@@ -2,22 +2,29 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../components/layout";
 
-interface LoginFormData {
+interface RegisterFormData {
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
+    confirmPassword: string;
 }
 
 interface ApiError {
     message: string;
 }
 
-export default function LoginPage() {
-    const [formData, setFormData] = useState<LoginFormData>({
+export default function RegisterPage() {
+    const [formData, setFormData] = useState<RegisterFormData>({
+        firstName: "",
+        lastName: "",
         email: "",
         password: "",
+        confirmPassword: "",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,41 +37,81 @@ export default function LoginPage() {
         if (error) setError(null);
     };
 
+    const validateForm = (): boolean => {
+        if (formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            return false;
+        }
+        if (formData.password.length < 6) {
+            setError("Password must be at least 6 characters long");
+            return false;
+        }
+        return true;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
+        if (!validateForm()) {
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch("/api/v1/auth/login", {
+            const response = await fetch("/api/v1/auth/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    password: formData.password,
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || "Login failed");
+                throw new Error(data.message || "Registration failed");
             }
 
-            // Store token and user info
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-                // Redirect to dashboard or home page
-                navigate("/dashboard");
-            } else {
-                throw new Error("No token received");
-            }
+            setSuccess(true);
+            setTimeout(() => {
+                navigate("/auth/login");
+            }, 2000);
         } catch (err) {
             const error = err as ApiError;
-            setError(error.message || "An error occurred during login");
+            setError(error.message || "An error occurred during registration");
         } finally {
             setLoading(false);
         }
     };
+
+    if (success) {
+        return (
+            <Layout showNavbar={false} showFooter={false}>
+                <div className="flex justify-center items-center bg-gray-50 min-h-screen">
+                    <div className="w-full max-w-md text-center">
+                        <div className="bg-green-50 px-6 py-4 border border-green-200 rounded text-green-700">
+                            <h2 className="mb-2 font-semibold text-xl">
+                                Registration Successful!
+                            </h2>
+                            <p>
+                                Please check your email to verify your account.
+                            </p>
+                            <p className="mt-2 text-sm">
+                                Redirecting to login page...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout showNavbar={false} showFooter={false}>
@@ -76,15 +123,15 @@ export default function LoginPage() {
                             Everato
                         </Link>
                         <h2 className="mt-6 font-bold text-black text-3xl">
-                            Sign in to your account
+                            Create your account
                         </h2>
                         <p className="mt-2 text-gray-600">
                             Or{" "}
                             <Link
-                                to="/auth/register"
+                                to="/auth/login"
                                 className="font-medium text-black hover:underline"
                             >
-                                create a new account
+                                sign in to your existing account
                             </Link>
                         </p>
                     </div>
@@ -98,6 +145,45 @@ export default function LoginPage() {
                         )}
 
                         <div className="space-y-4">
+                            <div className="gap-4 grid grid-cols-2">
+                                <div>
+                                    <label
+                                        htmlFor="firstName"
+                                        className="sr-only"
+                                    >
+                                        First Name
+                                    </label>
+                                    <input
+                                        id="firstName"
+                                        name="firstName"
+                                        type="text"
+                                        required
+                                        className="input-field"
+                                        placeholder="First name"
+                                        value={formData.firstName}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="lastName"
+                                        className="sr-only"
+                                    >
+                                        Last Name
+                                    </label>
+                                    <input
+                                        id="lastName"
+                                        name="lastName"
+                                        type="text"
+                                        required
+                                        className="input-field"
+                                        placeholder="Last name"
+                                        value={formData.lastName}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
                             <div>
                                 <label htmlFor="email" className="sr-only">
                                     Email address
@@ -123,40 +209,63 @@ export default function LoginPage() {
                                     id="password"
                                     name="password"
                                     type="password"
-                                    autoComplete="current-password"
+                                    autoComplete="new-password"
                                     required
                                     className="input-field"
-                                    placeholder="Password"
+                                    placeholder="Password (min. 6 characters)"
                                     value={formData.password}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="confirmPassword"
+                                    className="sr-only"
+                                >
+                                    Confirm Password
+                                </label>
+                                <input
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    required
+                                    className="input-field"
+                                    placeholder="Confirm password"
+                                    value={formData.confirmPassword}
                                     onChange={handleInputChange}
                                 />
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    name="remember-me"
-                                    type="checkbox"
-                                    className="border-gray-300 focus:ring-0 w-4 h-4 text-black"
-                                />
-                                <label
-                                    htmlFor="remember-me"
-                                    className="block ml-2 text-gray-600 text-sm"
-                                >
-                                    Remember me
-                                </label>
-                            </div>
-
-                            <div className="text-sm">
+                        <div className="flex items-center">
+                            <input
+                                id="agree-terms"
+                                name="agree-terms"
+                                type="checkbox"
+                                required
+                                className="border-gray-300 focus:ring-0 w-4 h-4 text-black"
+                            />
+                            <label
+                                htmlFor="agree-terms"
+                                className="block ml-2 text-gray-600 text-sm"
+                            >
+                                I agree to the{" "}
                                 <Link
-                                    to="/auth/forgot-password"
+                                    to="/terms"
                                     className="font-medium text-black hover:underline"
                                 >
-                                    Forgot your password?
+                                    Terms of Service
+                                </Link>{" "}
+                                and{" "}
+                                <Link
+                                    to="/privacy"
+                                    className="font-medium text-black hover:underline"
+                                >
+                                    Privacy Policy
                                 </Link>
-                            </div>
+                            </label>
                         </div>
 
                         <div>
@@ -169,12 +278,14 @@ export default function LoginPage() {
                                         : ""
                                 }`}
                             >
-                                {loading ? "Signing in..." : "Sign in"}
+                                {loading
+                                    ? "Creating account..."
+                                    : "Create account"}
                             </button>
                         </div>
                     </form>
 
-                    {/* Social Login Options */}
+                    {/* Social Register Options */}
                     <div className="mt-6">
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
@@ -234,26 +345,6 @@ export default function LoginPage() {
                                 GitHub
                             </button>
                         </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="text-gray-600 text-sm text-center">
-                        <p>
-                            By signing in, you agree to our{" "}
-                            <Link
-                                to="/terms"
-                                className="font-medium text-black hover:underline"
-                            >
-                                Terms of Service
-                            </Link>{" "}
-                            and{" "}
-                            <Link
-                                to="/privacy"
-                                className="font-medium text-black hover:underline"
-                            >
-                                Privacy Policy
-                            </Link>
-                        </p>
                     </div>
                 </div>
             </div>
