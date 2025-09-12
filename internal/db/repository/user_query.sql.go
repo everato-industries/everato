@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countTotalUsers = `-- name: CountTotalUsers :one
+SELECT COUNT(*) as total_users FROM users
+`
+
+func (q *Queries) CountTotalUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countTotalUsers)
+	var total_users int64
+	err := row.Scan(&total_users)
+	return total_users, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
   first_name, last_name, email, password

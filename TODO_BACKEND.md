@@ -1,3 +1,5 @@
+# Backend TODO
+
 ## 🎯 **Priority 1: Dashboard Analytics APIs**
 
 ### **1. Dashboard Statistics Endpoint**
@@ -189,6 +191,3 @@ performance data **Backend Tasks:**
 5. `internal/services/ticket/` (entire directory)
 6. `internal/services/payment/` (entire directory)
 7. Additional SQL queries in queries
-
-The frontend is essentially ready and just needs these backend APIs to be fully
-functional!

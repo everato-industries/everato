@@ -43,3 +43,6 @@ WHERE first_name ILIKE '%' || $1 || '%'
 ORDER BY created_at
 LIMIT $2
 OFFSET $3;
+
+-- name: CountTotalUsers :one
+SELECT COUNT(*) as total_users FROM users;

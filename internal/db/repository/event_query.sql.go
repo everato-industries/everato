@@ -11,6 +11,41 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countEventsByStatus = `-- name: CountEventsByStatus :one
+SELECT COUNT(*) as count FROM events
+WHERE status = $1
+`
+
+func (q *Queries) CountEventsByStatus(ctx context.Context, status EventStatus) (int64, error) {
+	row := q.db.QueryRow(ctx, countEventsByStatus, status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countTotalEvents = `-- name: CountTotalEvents :one
+SELECT COUNT(*) as total_events FROM events
+`
+
+func (q *Queries) CountTotalEvents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countTotalEvents)
+	var total_events int64
+	err := row.Scan(&total_events)
+	return total_events, err
+}
+
+const countUpcomingEvents = `-- name: CountUpcomingEvents :one
+SELECT COUNT(*) as upcoming_events FROM events
+WHERE start_time > CURRENT_TIMESTAMP
+`
+
+func (q *Queries) CountUpcomingEvents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countUpcomingEvents)
+	var upcoming_events int64
+	err := row.Scan(&upcoming_events)
+	return upcoming_events, err
+}
+
 const createEvent = `-- name: CreateEvent :one
 INSERT INTO events (
     title,
@@ -24,6 +59,7 @@ INSERT INTO events (
     location,
     total_seats,
     available_seats,
+    status,
     created_at,
     updated_at
 ) VALUES (
@@ -38,9 +74,10 @@ INSERT INTO events (
     $9,
     $10,
     $11,
+    $12,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug
+) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status
 `
 
 type CreateEventParams struct {
@@ -55,6 +92,7 @@ type CreateEventParams struct {
 	Location       pgtype.Text        `json:"location"`
 	TotalSeats     int32              `json:"total_seats"`
 	AvailableSeats int32              `json:"available_seats"`
+	Status         EventStatus        `json:"status"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event, error) {
@@ -70,6 +108,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		arg.Location,
 		arg.TotalSeats,
 		arg.AvailableSeats,
+		arg.Status,
 	)
 	var i Event
 	err := row.Scan(
@@ -87,6 +126,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Slug,
+		&i.Status,
 	)
 	return i, err
 }
@@ -101,8 +141,42 @@ func (q *Queries) DeleteEvent(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const getDashboardStats = `-- name: GetDashboardStats :one
+SELECT 
+    COUNT(*) as total_events,
+    COUNT(CASE WHEN status = 'CREATED' THEN 1 END) as created_events,
+    COUNT(CASE WHEN status = 'STARTED' THEN 1 END) as active_events,
+    COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed_events,
+    COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_events,
+    COUNT(CASE WHEN start_time > CURRENT_TIMESTAMP THEN 1 END) as upcoming_events
+FROM events
+`
+
+type GetDashboardStatsRow struct {
+	TotalEvents     int64 `json:"total_events"`
+	CreatedEvents   int64 `json:"created_events"`
+	ActiveEvents    int64 `json:"active_events"`
+	CompletedEvents int64 `json:"completed_events"`
+	CancelledEvents int64 `json:"cancelled_events"`
+	UpcomingEvents  int64 `json:"upcoming_events"`
+}
+
+func (q *Queries) GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, error) {
+	row := q.db.QueryRow(ctx, getDashboardStats)
+	var i GetDashboardStatsRow
+	err := row.Scan(
+		&i.TotalEvents,
+		&i.CreatedEvents,
+		&i.ActiveEvents,
+		&i.CompletedEvents,
+		&i.CancelledEvents,
+		&i.UpcomingEvents,
+	)
+	return i, err
+}
+
 const getEventByID = `-- name: GetEventByID :one
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
 WHERE id = $1
 `
 
@@ -124,12 +198,13 @@ func (q *Queries) GetEventByID(ctx context.Context, id pgtype.UUID) (Event, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Slug,
+		&i.Status,
 	)
 	return i, err
 }
 
 const getEventBySlug = `-- name: GetEventBySlug :one
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
 WHERE slug = $1
 `
 
@@ -151,12 +226,13 @@ func (q *Queries) GetEventBySlug(ctx context.Context, slug string) (Event, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Slug,
+		&i.Status,
 	)
 	return i, err
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
     ORDER BY start_time DESC
 LIMIT $1 OFFSET $2
 `
@@ -190,6 +266,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Slug,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -202,7 +279,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 }
 
 const listEventsByAdmin = `-- name: ListEventsByAdmin :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
     WHERE admin_id = $1
 ORDER BY start_time DESC
 `
@@ -231,6 +308,7 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Slug,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -243,7 +321,7 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 }
 
 const searchByName = `-- name: SearchByName :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
     WHERE title ILIKE '%' || $1 || '%'
     OR description ILIKE '%' || $1 || '%'
     OR slug ILIKE '%' || $1 || '%'
@@ -281,6 +359,7 @@ func (q *Queries) SearchByName(ctx context.Context, arg SearchByNameParams) ([]E
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Slug,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -317,9 +396,10 @@ SET
     location = $10,
     total_seats = $11,
     available_seats = $12,
+    status = $13,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug
+RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status
 `
 
 type UpdateEventParams struct {
@@ -335,6 +415,7 @@ type UpdateEventParams struct {
 	Location       pgtype.Text        `json:"location"`
 	TotalSeats     int32              `json:"total_seats"`
 	AvailableSeats int32              `json:"available_seats"`
+	Status         EventStatus        `json:"status"`
 }
 
 func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error) {
@@ -351,6 +432,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		arg.Location,
 		arg.TotalSeats,
 		arg.AvailableSeats,
+		arg.Status,
 	)
 	var i Event
 	err := row.Scan(
@@ -368,6 +450,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Slug,
+		&i.Status,
 	)
 	return i, err
 }

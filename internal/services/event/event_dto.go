@@ -28,18 +28,19 @@ const (
 //   - Provides methods to convert the validated data to repository formats
 //   - Transforms string representations to appropriate database types (UUIDs, timestamps)
 type CreateEventDTO struct {
-	Title          string    `json:"title" validate:"required,min=2,max=100"`             // Event title (2-100 chars)
-	Description    string    `json:"description" validate:"required,min=10,max=500"`      // Event description (10-500 chars)
-	StartTime      string    `json:"start_time" validate:"required,datetime"`             // Event start time in ISO 8601 format
-	EndTime        string    `json:"end_time" validate:"required,datetime"`               // Event end time in ISO 8601 format
-	Location       string    `json:"location" validate:"required,min=2,max=100"`          // Event location (online or in-person)
-	AdminID        string    `json:"admin_id" validate:"required,uuid"`                   // UUID of the event administrator
-	BannerURL      string    `json:"banner_url" validate:"omitempty,url"`                 // Optional URL to event banner image
-	IconURL        string    `json:"icon_url" validate:"omitempty,url"`                   // Optional URL to event icon image
-	TotalSeats     int       `json:"total_seats" validate:"required,min=1,max=10000"`     // Total capacity of the event (1-10000)
-	AvailableSeats int       `json:"available_seats" validate:"required,min=0,max=10000"` // Initially available seats for booking
-	TIME_Start     time.Time `json:"-" validate:"-"`                                      // Internal field for parsed start time (not exposed in JSON)
-	TIME_End       time.Time `json:"-" validate:"-"`                                      // Internal field for parsed end time (not exposed in JSON)
+	Title          string    `json:"title" validate:"required,min=2,max=100"`                               // Event title (2-100 chars)
+	Description    string    `json:"description" validate:"required,min=10,max=500"`                        // Event description (10-500 chars)
+	StartTime      string    `json:"start_time" validate:"required,datetime"`                               // Event start time in ISO 8601 format
+	EndTime        string    `json:"end_time" validate:"required,datetime"`                                 // Event end time in ISO 8601 format
+	Location       string    `json:"location" validate:"required,min=2,max=100"`                            // Event location (online or in-person)
+	AdminID        string    `json:"admin_id" validate:"required,uuid"`                                     // UUID of the event administrator
+	BannerURL      string    `json:"banner_url" validate:"omitempty,url"`                                   // Optional URL to event banner image
+	IconURL        string    `json:"icon_url" validate:"omitempty,url"`                                     // Optional URL to event icon image
+	TotalSeats     int       `json:"total_seats" validate:"required,min=1,max=10000"`                       // Total capacity of the event (1-10000)
+	AvailableSeats int       `json:"available_seats" validate:"required,min=0,max=10000"`                   // Initially available seats for booking
+	Status         string    `json:"status" validate:"omitempty,oneof=CREATED STARTED COMPLETED CANCELLED"` // Event status (defaults to CREATED)
+	TIME_Start     time.Time `json:"-" validate:"-"`                                                        // Internal field for parsed start time (not exposed in JSON)
+	TIME_End       time.Time `json:"-" validate:"-"`                                                        // Internal field for parsed end time (not exposed in JSON)
 }
 
 // time_parser is a custom validator function for validating datetime strings.
@@ -144,6 +145,12 @@ func (c CreateEventDTO) ToCreateEventParams(slug string) (repository.CreateEvent
 		return repository.CreateEventParams{}, fmt.Errorf("invalid admin ID: %w", err)
 	}
 
+	// Set default status if not provided
+	status := repository.EventStatus(c.Status)
+	if status == "" {
+		status = repository.EventStatusCREATED
+	}
+
 	return repository.CreateEventParams{
 		Title:          c.Title,
 		Description:    c.Description,
@@ -156,5 +163,6 @@ func (c CreateEventDTO) ToCreateEventParams(slug string) (repository.CreateEvent
 		Icon:           c.IconURL,
 		TotalSeats:     int32(c.TotalSeats),
 		AvailableSeats: int32(c.AvailableSeats),
+		Status:         status,
 	}, nil
 }

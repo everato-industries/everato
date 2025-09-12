@@ -11,6 +11,7 @@ INSERT INTO events (
     location,
     total_seats,
     available_seats,
+    status,
     created_at,
     updated_at
 ) VALUES (
@@ -25,6 +26,7 @@ INSERT INTO events (
     $9,
     $10,
     $11,
+    $12,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) RETURNING *;
@@ -68,6 +70,7 @@ SET
     location = $10,
     total_seats = $11,
     available_seats = $12,
+    status = $13,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;
@@ -80,3 +83,24 @@ WHERE id = $1;
 SELECT * FROM events
     WHERE admin_id = $1
 ORDER BY start_time DESC;
+
+-- name: CountTotalEvents :one
+SELECT COUNT(*) as total_events FROM events;
+
+-- name: CountEventsByStatus :one
+SELECT COUNT(*) as count FROM events
+WHERE status = $1;
+
+-- name: CountUpcomingEvents :one
+SELECT COUNT(*) as upcoming_events FROM events
+WHERE start_time > CURRENT_TIMESTAMP;
+
+-- name: GetDashboardStats :one
+SELECT
+    COUNT(*) as total_events,
+    COUNT(CASE WHEN status = 'CREATED' THEN 1 END) as created_events,
+    COUNT(CASE WHEN status = 'STARTED' THEN 1 END) as active_events,
+    COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed_events,
+    COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_events,
+    COUNT(CASE WHEN start_time > CURRENT_TIMESTAMP THEN 1 END) as upcoming_events
+FROM events;

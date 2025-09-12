@@ -99,7 +99,13 @@ func (s *Server) initializeRoutes() {
 	// Event creation, management, search, etc.
 	api.NewEventHandler(s.Cfg).RegisterRoutes(apivx)
 
+	// Route Group: Dashboard
+	// Dashboard statistics and analytics
+	api.NewDashboardHandler(s.Cfg).RegisterRoutes(apivx)
+
+	// --------------------------------------------------------------
 	// @TODO: User routes - User profile, management, etc.
+	// --------------------------------------------------------------
 	// @TODO: Ticket routes - Ticket creation, validation, etc.
 	// @TODO: Notification routes - Email/push notifications, etc.
 
