@@ -30,6 +30,7 @@ services:
 
     postgres:
         image: postgres:15
+        restart: unless-stopped
         environment:
             POSTGRES_DB: everato
             POSTGRES_USER: piush

@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/services/mailer"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/jackc/pgx/v5"
 )
 
 func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, cfg *config.Config) {
@@ -124,7 +125,7 @@ func CreateUser(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, 
 			},
 		)
 		return
-	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	} else if !errors.Is(err, pgx.ErrNoRows) {
 		// Check if the error is anything other than "user not found"
 		// If it's a different error, it indicates a database issue
 		logger.StdoutLogger.Error("Error Finding user", "err", err.Error()) // Log the error

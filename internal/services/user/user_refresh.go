@@ -7,22 +7,23 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // RefreshUserToken handles the refresh token logic for sub-admins and users.
 // It retrieves the JWT token from cookies, validates it, and issues a new token with extended expiration.
 //
 // The function performs the following operations:
-// 1. Extracts the JWT token from the request's cookies
-// 2. Verifies the token's signature and validity
-// 3. Extracts the user ID from the token claims
-// 4. Issues a new token with extended expiration (24 hours)
-// 5. Sets the new token as a HTTP-only cookie
-// 6. Returns the new token in the response for API clients
+//  1. Extracts the JWT token from the request's cookies
+//  2. Verifies the token's signature and validity
+//  3. Extracts the user ID from the token claims
+//  4. Issues a new token with extended expiration (24 hours)
+//  5. Sets the new token as a HTTP-only cookie
+//  6. Returns the new token in the response for API clients
 //
 // Parameters:
 //   - wr: Custom HTTP writer for response handling

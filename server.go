@@ -11,12 +11,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
+
 	"github.com/dtg-lucifer/everato/config"
 	_ "github.com/dtg-lucifer/everato/internal/handlers"
 	"github.com/dtg-lucifer/everato/internal/handlers/v1/api"
 	"github.com/dtg-lucifer/everato/internal/middlewares"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/gorilla/mux"
 )
 
 // Server represents the HTTP server instance for the Everato application.
