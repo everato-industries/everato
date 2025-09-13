@@ -10,6 +10,7 @@ import (
 	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
+	"github.com/dtg-lucifer/everato/internal/services/event"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
 )
@@ -54,6 +55,9 @@ func (h *DashboardHandler) RegisterRoutes(router *mux.Router) {
 
 	// GET /dashboard/stats
 	r.HandleFunc("/stats", h.Stats).Methods(http.MethodGet)
+
+	// GET /dashboard/recent-events?limit={number}
+	r.HandleFunc("/recent-events", h.Recent).Methods(http.MethodGet)
 }
 
 // Stats route displays the stats for the dashboard
@@ -113,4 +117,29 @@ func (h *DashboardHandler) Stats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wr.Status(http.StatusOK).Json(response)
+}
+
+// Recent route displays the most recent event statuses
+//
+// HTTP Method: GET
+// Route: /api/v1/dashboard/stats
+//
+// Response:
+//   - 200 OK with JSON containing dashboard statistics
+func (h *DashboardHandler) Recent(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+	logger := pkg.NewLogger()
+	defer logger.Close()
+
+	// Check if repository is available
+	if h.Repo == nil {
+		logger.Error("Database repository not available")
+		wr.Status(http.StatusInternalServerError).Json(utils.M{
+			"error": "Database connection not available",
+		})
+		return
+	}
+
+	// Delegate to event service
+	event.GetRecentEvents(wr, h.Repo, h.Conn)
 }

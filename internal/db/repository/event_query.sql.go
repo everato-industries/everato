@@ -231,6 +231,53 @@ func (q *Queries) GetEventBySlug(ctx context.Context, slug string) (Event, error
 	return i, err
 }
 
+const getRecentEvents = `-- name: GetRecentEvents :many
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events 
+WHERE start_time >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+ORDER BY 
+    CASE 
+        WHEN start_time > CURRENT_TIMESTAMP THEN ABS(EXTRACT(EPOCH FROM (start_time - CURRENT_TIMESTAMP)))
+        ELSE ABS(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)))
+    END ASC
+LIMIT $1
+`
+
+func (q *Queries) GetRecentEvents(ctx context.Context, limit int32) ([]Event, error) {
+	rows, err := q.db.Query(ctx, getRecentEvents, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Event
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.Banner,
+			&i.Icon,
+			&i.AdminID,
+			&i.StartTime,
+			&i.EndTime,
+			&i.Location,
+			&i.TotalSeats,
+			&i.AvailableSeats,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Slug,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEvents = `-- name: ListEvents :many
 SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
     ORDER BY start_time DESC

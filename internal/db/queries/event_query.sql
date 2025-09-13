@@ -104,3 +104,13 @@ SELECT
     COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_events,
     COUNT(CASE WHEN start_time > CURRENT_TIMESTAMP THEN 1 END) as upcoming_events
 FROM events;
+
+-- name: GetRecentEvents :many
+SELECT * FROM events
+WHERE start_time >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+ORDER BY
+    CASE
+        WHEN start_time > CURRENT_TIMESTAMP THEN ABS(EXTRACT(EPOCH FROM (start_time - CURRENT_TIMESTAMP)))
+        ELSE ABS(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)))
+    END ASC
+LIMIT $1;
