@@ -124,24 +124,38 @@ export default function EventsPage() {
                         {/* Search Bar */}
                         <form
                             onSubmit={handleSearchSubmit}
-                            className="mx-auto max-w-2xl"
+                            className="mx-auto mt-8 max-w-3xl"
                         >
-                            <div className="flex">
+                            <div className="flex bg-white/10 shadow-lg backdrop-blur-sm border-2 border-white/20 overflow-hidden">
                                 <input
                                     type="text"
-                                    placeholder="Search events..."
-                                    className="flex-1 px-6 py-4 focus:outline-none text-black"
+                                    placeholder="Search events by title or description..."
+                                    className="flex-1 bg-transparent px-6 py-5 focus:outline-none text-white text-lg placeholder-gray-300"
                                     value={searchQuery}
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)}
                                 />
                                 <button
                                     type="submit"
-                                    className="bg-white hover:bg-gray-100 px-8 py-4 font-medium text-black transition-colors duration-200"
+                                    className="bg-white hover:bg-gray-100 px-8 py-5 font-semibold text-black text-lg transition-colors duration-200"
                                 >
-                                    Search
+                                    🔍 Search
                                 </button>
                             </div>
+                            {searchQuery && (
+                                <div className="mt-3 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery("");
+                                            setSearchParams({});
+                                        }}
+                                        className="text-white/80 hover:text-white text-sm underline"
+                                    >
+                                        Clear search
+                                    </button>
+                                </div>
+                            )}
                         </form>
                     </div>
                 </div>
@@ -151,9 +165,9 @@ export default function EventsPage() {
             <section className="py-12">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                     {/* Filters */}
-                    <div className="bg-gray-50 mb-8 p-6">
-                        <div className="gap-4 grid grid-cols-1 md:grid-cols-2">
-                            <div>
+                    <div className="bg-gray-50 mb-8 card">
+                        <div className="flex md:flex-row flex-col md:justify-between md:items-center gap-4">
+                            <div className="flex-1">
                                 <label className="block mb-2 font-medium text-black text-sm">
                                     Sort By
                                 </label>
@@ -170,7 +184,7 @@ export default function EventsPage() {
                                     <option value="title">Title</option>
                                 </select>
                             </div>
-                            <div>
+                            <div className="flex-1 self-end">
                                 <label className="block mb-2 font-medium text-black text-sm">
                                     Results per page: {eventsPerPage}
                                 </label>

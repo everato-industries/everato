@@ -5,7 +5,6 @@ import RegisterPage from "./pages/auth/register";
 import EventsPage from "./pages/events";
 import EventDetailPage from "./pages/event-detail";
 import DashboardPage from "./pages/dashboard";
-import AdminDashboardPage from "./pages/admin-dashboard";
 import AdminPage from "./pages/admin";
 import CreateEventPage from "./pages/create-event";
 import ProtectedRoute from "./components/protected-route";
@@ -23,14 +22,6 @@ export default function AppRoutes() {
 
             {/* Admin routes - protected */}
             <Route path="/admin" element={<AdminPage />} />
-            <Route
-                path="/admin/dashboard"
-                element={
-                    <ProtectedRoute>
-                        <AdminDashboardPage />
-                    </ProtectedRoute>
-                }
-            />
             <Route
                 path="/create-event"
                 element={

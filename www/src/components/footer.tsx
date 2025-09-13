@@ -4,18 +4,6 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
-    company: [
-      { href: "/about", label: "About" },
-      { href: "/contact", label: "Contact" },
-      { href: "/careers", label: "Careers" },
-      { href: "/press", label: "Press" },
-    ],
-    support: [
-      { href: "/help", label: "Help Center" },
-      { href: "/privacy", label: "Privacy Policy" },
-      { href: "/terms", label: "Terms of Service" },
-      { href: "/faq", label: "FAQ" },
-    ],
     events: [
       { href: "/events", label: "Browse Events" },
       { href: "/create-event", label: "Create Event" },
@@ -25,7 +13,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-white border-gray-200 border-t">
+    <footer className="flex flex-col bg-white border-gray-200 border-t">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
         <div className="gap-8 grid grid-cols-1 md:grid-cols-4">
           {/* Brand Section */}
@@ -39,44 +27,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Links Sections */}
-          <div className="col-span-1">
-            <h3 className="font-semibold text-black text-sm uppercase tracking-wider">
-              Company
-            </h3>
-            <ul className="space-y-3 mt-4">
-              {footerLinks.company.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-gray-600 hover:text-black transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="col-span-1">
-            <h3 className="font-semibold text-black text-sm uppercase tracking-wider">
-              Support
-            </h3>
-            <ul className="space-y-3 mt-4">
-              {footerLinks.support.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-gray-600 hover:text-black transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="col-span-1">
+          <div className="flex-1 col-span-1">
             <h3 className="font-semibold text-black text-sm uppercase tracking-wider">
               Events
             </h3>

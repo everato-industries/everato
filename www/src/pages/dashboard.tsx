@@ -97,7 +97,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="gap-6 grid grid-cols-1 md:grid-cols-3 mb-8">
-                    <div className="bg-white shadow-sm p-6 border">
+                    <div className="card">
                         <h3 className="mb-2 font-medium text-gray-500 text-sm uppercase tracking-wide">
                             Recent Events
                         </h3>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
                             {loading ? "..." : stats.totalEvents}
                         </p>
                     </div>
-                    <div className="bg-white shadow-sm p-6 border">
+                    <div className="card">
                         <h3 className="mb-2 font-medium text-gray-500 text-sm uppercase tracking-wide">
                             Upcoming Events
                         </h3>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
                             {loading ? "..." : stats.upcomingEvents}
                         </p>
                     </div>
-                    <div className="bg-white shadow-sm p-6 border">
+                    <div className="card">
                         <h3 className="mb-2 font-medium text-gray-500 text-sm uppercase tracking-wide">
                             Active Events
                         </h3>
@@ -123,7 +123,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-white shadow-sm border">
+                <div className="card">
                     <div className="flex justify-between items-center px-6 py-4 border-b">
                         <h2 className="font-semibold text-black text-xl">
                             Recent Events
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                             </div>
                         )
                         : (
-                            <div className="divide-y">
+                            <div className="divide-y divide-gray-300">
                                 {recentEvents.map((event) => (
                                     <div
                                         key={event.id}
@@ -190,8 +190,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div className="flex items-center space-x-4 mt-1 text-gray-500 text-sm">
                                                     <span>
-                                                        📅{" "}
-                                                        {formatDate(
+                                                        📅 {formatDate(
                                                             event.start_time,
                                                         )}
                                                     </span>
@@ -224,7 +223,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="gap-6 grid grid-cols-1 md:grid-cols-2 mt-8">
-                    <div className="bg-white shadow-sm p-6 border">
+                    <div className="card">
                         <h3 className="mb-3 font-semibold text-black text-lg">
                             Explore Events
                         </h3>
@@ -237,7 +236,7 @@ export default function DashboardPage() {
                         </Link>
                     </div>
 
-                    <div className="bg-gray-50 shadow-sm p-6 border">
+                    <div className="bg-gray-50 card">
                         <h3 className="mb-3 font-semibold text-black text-lg">
                             Event Organizer?
                         </h3>
