@@ -116,39 +116,123 @@ INSERT INTO events (
     total_seats,
     available_seats,
     status,
+    organizer_name,
+    organizer_email,
+    organizer_phone,
+    organization,
+    contact_email,
+    contact_phone,
+    refund_policy,
+    terms_and_conditions,
+    event_type,
+    category,
+    max_tickets_per_user,
+    booking_start_time,
+    booking_end_time,
+    tags,
+    website_url,
+    facebook_url,
+    twitter_url,
+    instagram_url,
+    linkedin_url,
+    venue_name,
+    address_line1,
+    address_line2,
+    city,
+    state,
+    postal_code,
+    country,
+    latitude,
+    longitude,
     created_at,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10,
-    $11,
-    $12,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP
-) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status
+    $1,  -- title
+    $2,  -- description
+    $3,  -- slug
+    $4,  -- banner
+    $5,  -- icon
+    $6,  -- admin_id
+    $7,  -- start_time
+    $8,  -- end_time
+    $9,  -- location
+    $10, -- total_seats
+    $11, -- available_seats
+    $12, -- status
+    $13, -- organizer_name
+    $14, -- organizer_email
+    $15, -- organizer_phone
+    $16, -- organization
+    $17, -- contact_email
+    $18, -- contact_phone
+    $19, -- refund_policy
+    $20, -- terms_and_conditions
+    $21, -- event_type
+    $22, -- category
+    $23, -- max_tickets_per_user
+    $24, -- booking_start_time
+    $25, -- booking_end_time
+    $26, -- tags
+    $27, -- website_url
+    $28, -- facebook_url
+    $29, -- twitter_url
+    $30, -- instagram_url
+    $31, -- linkedin_url
+    $32, -- venue_name
+    $33, -- address_line1
+    $34, -- address_line2
+    $35, -- city
+    $36, -- state
+    $37, -- postal_code
+    $38, -- country
+    $39, -- latitude
+    $40, -- longitude
+    CURRENT_TIMESTAMP, -- created_at
+    CURRENT_TIMESTAMP  -- updated_at
+) RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude
 `
 
 type CreateEventParams struct {
-	Title          string             `json:"title"`
-	Description    string             `json:"description"`
-	Slug           string             `json:"slug"`
-	Banner         string             `json:"banner"`
-	Icon           string             `json:"icon"`
-	AdminID        pgtype.UUID        `json:"admin_id"`
-	StartTime      pgtype.Timestamptz `json:"start_time"`
-	EndTime        pgtype.Timestamptz `json:"end_time"`
-	Location       pgtype.Text        `json:"location"`
-	TotalSeats     int32              `json:"total_seats"`
-	AvailableSeats int32              `json:"available_seats"`
-	Status         EventStatus        `json:"status"`
+	Title              string             `json:"title"`
+	Description        string             `json:"description"`
+	Slug               string             `json:"slug"`
+	Banner             string             `json:"banner"`
+	Icon               string             `json:"icon"`
+	AdminID            pgtype.UUID        `json:"admin_id"`
+	StartTime          pgtype.Timestamptz `json:"start_time"`
+	EndTime            pgtype.Timestamptz `json:"end_time"`
+	Location           pgtype.Text        `json:"location"`
+	TotalSeats         int32              `json:"total_seats"`
+	AvailableSeats     int32              `json:"available_seats"`
+	Status             EventStatus        `json:"status"`
+	OrganizerName      pgtype.Text        `json:"organizer_name"`
+	OrganizerEmail     pgtype.Text        `json:"organizer_email"`
+	OrganizerPhone     pgtype.Text        `json:"organizer_phone"`
+	Organization       pgtype.Text        `json:"organization"`
+	ContactEmail       pgtype.Text        `json:"contact_email"`
+	ContactPhone       pgtype.Text        `json:"contact_phone"`
+	RefundPolicy       pgtype.Text        `json:"refund_policy"`
+	TermsAndConditions pgtype.Text        `json:"terms_and_conditions"`
+	EventType          pgtype.Text        `json:"event_type"`
+	Category           pgtype.Text        `json:"category"`
+	MaxTicketsPerUser  pgtype.Int4        `json:"max_tickets_per_user"`
+	BookingStartTime   pgtype.Timestamptz `json:"booking_start_time"`
+	BookingEndTime     pgtype.Timestamptz `json:"booking_end_time"`
+	Tags               []string           `json:"tags"`
+	WebsiteUrl         pgtype.Text        `json:"website_url"`
+	FacebookUrl        pgtype.Text        `json:"facebook_url"`
+	TwitterUrl         pgtype.Text        `json:"twitter_url"`
+	InstagramUrl       pgtype.Text        `json:"instagram_url"`
+	LinkedinUrl        pgtype.Text        `json:"linkedin_url"`
+	VenueName          pgtype.Text        `json:"venue_name"`
+	AddressLine1       pgtype.Text        `json:"address_line1"`
+	AddressLine2       pgtype.Text        `json:"address_line2"`
+	City               pgtype.Text        `json:"city"`
+	State              pgtype.Text        `json:"state"`
+	PostalCode         pgtype.Text        `json:"postal_code"`
+	Country            pgtype.Text        `json:"country"`
+	Latitude           pgtype.Numeric     `json:"latitude"`
+	Longitude          pgtype.Numeric     `json:"longitude"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event, error) {
@@ -165,6 +249,34 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		arg.TotalSeats,
 		arg.AvailableSeats,
 		arg.Status,
+		arg.OrganizerName,
+		arg.OrganizerEmail,
+		arg.OrganizerPhone,
+		arg.Organization,
+		arg.ContactEmail,
+		arg.ContactPhone,
+		arg.RefundPolicy,
+		arg.TermsAndConditions,
+		arg.EventType,
+		arg.Category,
+		arg.MaxTicketsPerUser,
+		arg.BookingStartTime,
+		arg.BookingEndTime,
+		arg.Tags,
+		arg.WebsiteUrl,
+		arg.FacebookUrl,
+		arg.TwitterUrl,
+		arg.InstagramUrl,
+		arg.LinkedinUrl,
+		arg.VenueName,
+		arg.AddressLine1,
+		arg.AddressLine2,
+		arg.City,
+		arg.State,
+		arg.PostalCode,
+		arg.Country,
+		arg.Latitude,
+		arg.Longitude,
 	)
 	var i Event
 	err := row.Scan(
@@ -183,6 +295,34 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.UpdatedAt,
 		&i.Slug,
 		&i.Status,
+		&i.OrganizerName,
+		&i.OrganizerEmail,
+		&i.OrganizerPhone,
+		&i.Organization,
+		&i.ContactEmail,
+		&i.ContactPhone,
+		&i.RefundPolicy,
+		&i.TermsAndConditions,
+		&i.EventType,
+		&i.Category,
+		&i.MaxTicketsPerUser,
+		&i.BookingStartTime,
+		&i.BookingEndTime,
+		&i.Tags,
+		&i.WebsiteUrl,
+		&i.FacebookUrl,
+		&i.TwitterUrl,
+		&i.InstagramUrl,
+		&i.LinkedinUrl,
+		&i.VenueName,
+		&i.AddressLine1,
+		&i.AddressLine2,
+		&i.City,
+		&i.State,
+		&i.PostalCode,
+		&i.Country,
+		&i.Latitude,
+		&i.Longitude,
 	)
 	return i, err
 }
@@ -310,7 +450,7 @@ func (q *Queries) GetDashboardStats(ctx context.Context) (GetDashboardStatsRow, 
 }
 
 const getEventByID = `-- name: GetEventByID :one
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
 WHERE id = $1
 `
 
@@ -333,12 +473,40 @@ func (q *Queries) GetEventByID(ctx context.Context, id pgtype.UUID) (Event, erro
 		&i.UpdatedAt,
 		&i.Slug,
 		&i.Status,
+		&i.OrganizerName,
+		&i.OrganizerEmail,
+		&i.OrganizerPhone,
+		&i.Organization,
+		&i.ContactEmail,
+		&i.ContactPhone,
+		&i.RefundPolicy,
+		&i.TermsAndConditions,
+		&i.EventType,
+		&i.Category,
+		&i.MaxTicketsPerUser,
+		&i.BookingStartTime,
+		&i.BookingEndTime,
+		&i.Tags,
+		&i.WebsiteUrl,
+		&i.FacebookUrl,
+		&i.TwitterUrl,
+		&i.InstagramUrl,
+		&i.LinkedinUrl,
+		&i.VenueName,
+		&i.AddressLine1,
+		&i.AddressLine2,
+		&i.City,
+		&i.State,
+		&i.PostalCode,
+		&i.Country,
+		&i.Latitude,
+		&i.Longitude,
 	)
 	return i, err
 }
 
 const getEventBySlug = `-- name: GetEventBySlug :one
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
 WHERE slug = $1
 `
 
@@ -361,15 +529,43 @@ func (q *Queries) GetEventBySlug(ctx context.Context, slug string) (Event, error
 		&i.UpdatedAt,
 		&i.Slug,
 		&i.Status,
+		&i.OrganizerName,
+		&i.OrganizerEmail,
+		&i.OrganizerPhone,
+		&i.Organization,
+		&i.ContactEmail,
+		&i.ContactPhone,
+		&i.RefundPolicy,
+		&i.TermsAndConditions,
+		&i.EventType,
+		&i.Category,
+		&i.MaxTicketsPerUser,
+		&i.BookingStartTime,
+		&i.BookingEndTime,
+		&i.Tags,
+		&i.WebsiteUrl,
+		&i.FacebookUrl,
+		&i.TwitterUrl,
+		&i.InstagramUrl,
+		&i.LinkedinUrl,
+		&i.VenueName,
+		&i.AddressLine1,
+		&i.AddressLine2,
+		&i.City,
+		&i.State,
+		&i.PostalCode,
+		&i.Country,
+		&i.Latitude,
+		&i.Longitude,
 	)
 	return i, err
 }
 
 const getRecentEvents = `-- name: GetRecentEvents :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events 
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
 WHERE start_time >= CURRENT_TIMESTAMP - INTERVAL '1 day'
-ORDER BY 
-    CASE 
+ORDER BY
+    CASE
         WHEN start_time > CURRENT_TIMESTAMP THEN ABS(EXTRACT(EPOCH FROM (start_time - CURRENT_TIMESTAMP)))
         ELSE ABS(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)))
     END ASC
@@ -401,6 +597,34 @@ func (q *Queries) GetRecentEvents(ctx context.Context, limit int32) ([]Event, er
 			&i.UpdatedAt,
 			&i.Slug,
 			&i.Status,
+			&i.OrganizerName,
+			&i.OrganizerEmail,
+			&i.OrganizerPhone,
+			&i.Organization,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.RefundPolicy,
+			&i.TermsAndConditions,
+			&i.EventType,
+			&i.Category,
+			&i.MaxTicketsPerUser,
+			&i.BookingStartTime,
+			&i.BookingEndTime,
+			&i.Tags,
+			&i.WebsiteUrl,
+			&i.FacebookUrl,
+			&i.TwitterUrl,
+			&i.InstagramUrl,
+			&i.LinkedinUrl,
+			&i.VenueName,
+			&i.AddressLine1,
+			&i.AddressLine2,
+			&i.City,
+			&i.State,
+			&i.PostalCode,
+			&i.Country,
+			&i.Latitude,
+			&i.Longitude,
 		); err != nil {
 			return nil, err
 		}
@@ -446,9 +670,9 @@ func (q *Queries) GetTicketTypesByEventID(ctx context.Context, eventID pgtype.UU
 
 const getValidCouponByCode = `-- name: GetValidCouponByCode :one
 SELECT id, event_id, code, discount_percentage, valid_from, valid_until, usage_limit, created_at, updated_at, usage_count FROM coupons
-WHERE code = $1 
-    AND valid_from <= CURRENT_TIMESTAMP 
-    AND valid_until >= CURRENT_TIMESTAMP 
+WHERE code = $1
+    AND valid_from <= CURRENT_TIMESTAMP
+    AND valid_until >= CURRENT_TIMESTAMP
     AND usage_count < usage_limit
 LIMIT 1
 `
@@ -472,7 +696,7 @@ func (q *Queries) GetValidCouponByCode(ctx context.Context, code string) (Coupon
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
     ORDER BY start_time DESC
 LIMIT $1 OFFSET $2
 `
@@ -507,6 +731,34 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 			&i.UpdatedAt,
 			&i.Slug,
 			&i.Status,
+			&i.OrganizerName,
+			&i.OrganizerEmail,
+			&i.OrganizerPhone,
+			&i.Organization,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.RefundPolicy,
+			&i.TermsAndConditions,
+			&i.EventType,
+			&i.Category,
+			&i.MaxTicketsPerUser,
+			&i.BookingStartTime,
+			&i.BookingEndTime,
+			&i.Tags,
+			&i.WebsiteUrl,
+			&i.FacebookUrl,
+			&i.TwitterUrl,
+			&i.InstagramUrl,
+			&i.LinkedinUrl,
+			&i.VenueName,
+			&i.AddressLine1,
+			&i.AddressLine2,
+			&i.City,
+			&i.State,
+			&i.PostalCode,
+			&i.Country,
+			&i.Latitude,
+			&i.Longitude,
 		); err != nil {
 			return nil, err
 		}
@@ -519,7 +771,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 }
 
 const listEventsByAdmin = `-- name: ListEventsByAdmin :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
     WHERE admin_id = $1
 ORDER BY start_time DESC
 `
@@ -549,6 +801,34 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 			&i.UpdatedAt,
 			&i.Slug,
 			&i.Status,
+			&i.OrganizerName,
+			&i.OrganizerEmail,
+			&i.OrganizerPhone,
+			&i.Organization,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.RefundPolicy,
+			&i.TermsAndConditions,
+			&i.EventType,
+			&i.Category,
+			&i.MaxTicketsPerUser,
+			&i.BookingStartTime,
+			&i.BookingEndTime,
+			&i.Tags,
+			&i.WebsiteUrl,
+			&i.FacebookUrl,
+			&i.TwitterUrl,
+			&i.InstagramUrl,
+			&i.LinkedinUrl,
+			&i.VenueName,
+			&i.AddressLine1,
+			&i.AddressLine2,
+			&i.City,
+			&i.State,
+			&i.PostalCode,
+			&i.Country,
+			&i.Latitude,
+			&i.Longitude,
 		); err != nil {
 			return nil, err
 		}
@@ -561,7 +841,7 @@ func (q *Queries) ListEventsByAdmin(ctx context.Context, adminID pgtype.UUID) ([
 }
 
 const searchByName = `-- name: SearchByName :many
-SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status FROM events
+SELECT id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude FROM events
     WHERE title ILIKE '%' || $1 || '%'
     OR description ILIKE '%' || $1 || '%'
     OR slug ILIKE '%' || $1 || '%'
@@ -600,6 +880,34 @@ func (q *Queries) SearchByName(ctx context.Context, arg SearchByNameParams) ([]E
 			&i.UpdatedAt,
 			&i.Slug,
 			&i.Status,
+			&i.OrganizerName,
+			&i.OrganizerEmail,
+			&i.OrganizerPhone,
+			&i.Organization,
+			&i.ContactEmail,
+			&i.ContactPhone,
+			&i.RefundPolicy,
+			&i.TermsAndConditions,
+			&i.EventType,
+			&i.Category,
+			&i.MaxTicketsPerUser,
+			&i.BookingStartTime,
+			&i.BookingEndTime,
+			&i.Tags,
+			&i.WebsiteUrl,
+			&i.FacebookUrl,
+			&i.TwitterUrl,
+			&i.InstagramUrl,
+			&i.LinkedinUrl,
+			&i.VenueName,
+			&i.AddressLine1,
+			&i.AddressLine2,
+			&i.City,
+			&i.State,
+			&i.PostalCode,
+			&i.Country,
+			&i.Latitude,
+			&i.Longitude,
 		); err != nil {
 			return nil, err
 		}
@@ -639,7 +947,7 @@ SET
     status = $13,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status
+RETURNING id, title, description, banner, icon, admin_id, start_time, end_time, location, total_seats, available_seats, created_at, updated_at, slug, status, organizer_name, organizer_email, organizer_phone, organization, contact_email, contact_phone, refund_policy, terms_and_conditions, event_type, category, max_tickets_per_user, booking_start_time, booking_end_time, tags, website_url, facebook_url, twitter_url, instagram_url, linkedin_url, venue_name, address_line1, address_line2, city, state, postal_code, country, latitude, longitude
 `
 
 type UpdateEventParams struct {
@@ -691,6 +999,34 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.UpdatedAt,
 		&i.Slug,
 		&i.Status,
+		&i.OrganizerName,
+		&i.OrganizerEmail,
+		&i.OrganizerPhone,
+		&i.Organization,
+		&i.ContactEmail,
+		&i.ContactPhone,
+		&i.RefundPolicy,
+		&i.TermsAndConditions,
+		&i.EventType,
+		&i.Category,
+		&i.MaxTicketsPerUser,
+		&i.BookingStartTime,
+		&i.BookingEndTime,
+		&i.Tags,
+		&i.WebsiteUrl,
+		&i.FacebookUrl,
+		&i.TwitterUrl,
+		&i.InstagramUrl,
+		&i.LinkedinUrl,
+		&i.VenueName,
+		&i.AddressLine1,
+		&i.AddressLine2,
+		&i.City,
+		&i.State,
+		&i.PostalCode,
+		&i.Country,
+		&i.Latitude,
+		&i.Longitude,
 	)
 	return i, err
 }

@@ -6,6 +6,7 @@ import EventsPage from "./pages/events";
 import EventDetailPage from "./pages/event-detail";
 import DashboardPage from "./pages/dashboard";
 import AdminPage from "./pages/admin";
+import CreateEventPage from "./pages/create-event";
 
 export default function AppRoutes() {
     return (
@@ -17,6 +18,7 @@ export default function AppRoutes() {
             <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/auth/register" element={<RegisterPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/create-event" element={<CreateEventPage />} />
 
             {/* Placeholder routes for other pages mentioned in navigation */}
             <Route

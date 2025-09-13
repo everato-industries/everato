@@ -1,20 +1,27 @@
 import axios from "axios";
+import { clearAuthData, getAuthToken, updateLastActivity } from "./auth";
 
 // Create axios instance with default configuration
 const api = axios.create({
-    baseURL: "/api/v1",
+    baseURL: "http://localhost:8080/api/v1",
     headers: {
         "Content-Type": "application/json",
     },
+    withCredentials: true, // Include cookies in requests
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and update activity
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        // Get token from auth utility (checks both localStorage and cookies)
+        const token = getAuthToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Update last activity timestamp
+        updateLastActivity();
+
         return config;
     },
     (error) => {
@@ -30,9 +37,12 @@ api.interceptors.response.use(
     (error) => {
         // Handle common errors
         if (error.response?.status === 401) {
-            // Unauthorized - remove token and redirect to login
-            localStorage.removeItem("token");
-            window.location.href = "/auth/login";
+            // Unauthorized - clear auth data and redirect to admin login
+            clearAuthData();
+            window.location.href = "/admin";
+        } else if (error.response?.status === 403) {
+            // Forbidden - user doesn't have permission
+            console.error("Access denied: Insufficient permissions");
         }
         return Promise.reject(error);
     },

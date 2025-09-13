@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/utils"
-	"github.com/jackc/pgx/v5"
 )
 
 func GetRecentEvents(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn) {
@@ -58,7 +59,7 @@ func GetRecentEvents(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.C
 
 		// Add admin ID if available
 		if event.AdminID.Valid {
-			eventData["admin_id"] = event.AdminID.Bytes
+			eventData["admin_id"] = event.AdminID.String()
 		}
 
 		events = append(events, eventData)

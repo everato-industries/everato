@@ -12,23 +12,79 @@ INSERT INTO events (
     total_seats,
     available_seats,
     status,
+    organizer_name,
+    organizer_email,
+    organizer_phone,
+    organization,
+    contact_email,
+    contact_phone,
+    refund_policy,
+    terms_and_conditions,
+    event_type,
+    category,
+    max_tickets_per_user,
+    booking_start_time,
+    booking_end_time,
+    tags,
+    website_url,
+    facebook_url,
+    twitter_url,
+    instagram_url,
+    linkedin_url,
+    venue_name,
+    address_line1,
+    address_line2,
+    city,
+    state,
+    postal_code,
+    country,
+    latitude,
+    longitude,
     created_at,
     updated_at
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10,
-    $11,
-    $12,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP
+    $1,  -- title
+    $2,  -- description
+    $3,  -- slug
+    $4,  -- banner
+    $5,  -- icon
+    $6,  -- admin_id
+    $7,  -- start_time
+    $8,  -- end_time
+    $9,  -- location
+    $10, -- total_seats
+    $11, -- available_seats
+    $12, -- status
+    $13, -- organizer_name
+    $14, -- organizer_email
+    $15, -- organizer_phone
+    $16, -- organization
+    $17, -- contact_email
+    $18, -- contact_phone
+    $19, -- refund_policy
+    $20, -- terms_and_conditions
+    $21, -- event_type
+    $22, -- category
+    $23, -- max_tickets_per_user
+    $24, -- booking_start_time
+    $25, -- booking_end_time
+    $26, -- tags
+    $27, -- website_url
+    $28, -- facebook_url
+    $29, -- twitter_url
+    $30, -- instagram_url
+    $31, -- linkedin_url
+    $32, -- venue_name
+    $33, -- address_line1
+    $34, -- address_line2
+    $35, -- city
+    $36, -- state
+    $37, -- postal_code
+    $38, -- country
+    $39, -- latitude
+    $40, -- longitude
+    CURRENT_TIMESTAMP, -- created_at
+    CURRENT_TIMESTAMP  -- updated_at
 ) RETURNING *;
 
 -- name: GetEventByID :one

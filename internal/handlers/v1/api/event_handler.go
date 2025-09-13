@@ -6,6 +6,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/dtg-lucifer/everato/config"
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/handlers"
@@ -13,8 +16,6 @@ import (
 	"github.com/dtg-lucifer/everato/internal/services/event"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 )
 
 // EventHandler manages event-related HTTP endpoints in the API.
@@ -90,8 +91,9 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	protected.Use(guard.Guard) // Guard the whole route group
 
 	// Register individual route handlers
-	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
-	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an existing event
+	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost)    // Create a new event
+	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)     // Update an existing event
+	protected.HandleFunc("/recent", h.GetRecentEvents).Methods(http.MethodGet) // Get recent events
 }
 
 // CreateEvent handles requests to create a new event in the system.
@@ -176,4 +178,33 @@ func (h *EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	// Delegate event creation to the service layer
 	// This separates HTTP handling from business logic
 	event.GetAllEvents(wr, h.Repo, h.Conn)
+}
+
+// GetRecentEvents handles requests to retrieve recent events from the system.
+// It validates the request and delegates the business logic to the event service.
+//
+// This handler supports the following query parameters:
+//   - limit: Maximum number of events to return (default: 10, max: 50)
+//
+// HTTP Response codes:
+//   - 200 OK with recent events data
+//   - 400 Bad Request if limit parameter is invalid
+//   - 401 Unauthorized if user is not authenticated
+//   - 500 Internal Server Error if database operation fails
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) GetRecentEvents(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// Delegate to the service layer
+	event.GetRecentEvents(wr, h.Repo, h.Conn)
 }

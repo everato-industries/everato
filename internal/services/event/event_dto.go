@@ -4,6 +4,7 @@ package event
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
@@ -18,6 +19,15 @@ const (
 	LocationOnline   = "online"    // Online/virtual events held remotely
 	LocationInPerson = "in-person" // Physical events held at a specific venue
 )
+
+// stringToPgText converts a string to pgtype.Text, handling empty strings
+func stringToPgText(s string) pgtype.Text {
+	if s == "" {
+		return pgtype.Text{Valid: false}
+	}
+	text, _ := utils.StringToText(s)
+	return text
+}
 
 // TicketTypeDTO represents the data for creating a ticket type
 type TicketTypeDTO struct {
@@ -58,8 +68,50 @@ type CreateEventDTO struct {
 	Status         string          `json:"status" validate:"omitempty,oneof=CREATED STARTED COMPLETED CANCELLED"` // Event status (defaults to CREATED)
 	TicketTypes    []TicketTypeDTO `json:"ticket_types" validate:"required,min=1,dive"`                           // Ticket types for the event (at least 1 required)
 	Coupons        []CouponDTO     `json:"coupons" validate:"omitempty,dive"`                                     // Optional coupons for the event
-	TIME_Start     time.Time       `json:"-" validate:"-"`                                                        // Internal field for parsed start time (not exposed in JSON)
-	TIME_End       time.Time       `json:"-" validate:"-"`                                                        // Internal field for parsed end time (not exposed in JSON)
+
+	// Organizer Information
+	OrganizerName  string `json:"organizer_name" validate:"omitempty,min=2,max=255"`  // Name of the event organizer
+	OrganizerEmail string `json:"organizer_email" validate:"omitempty,email,max=255"` // Email of the event organizer
+	OrganizerPhone string `json:"organizer_phone" validate:"omitempty,max=50"`        // Phone number of the event organizer
+	Organization   string `json:"organization" validate:"omitempty,max=255"`          // Organization hosting the event
+
+	// Contact Information
+	ContactEmail string `json:"contact_email" validate:"omitempty,email,max=255"` // Contact email for event inquiries
+	ContactPhone string `json:"contact_phone" validate:"omitempty,max=50"`        // Contact phone for event inquiries
+
+	// Event Details
+	EventType          string `json:"event_type" validate:"omitempty,oneof=CONFERENCE WORKSHOP SEMINAR MEETUP FESTIVAL CONCERT EXHIBITION OTHER"`          // Type of event
+	Category           string `json:"category" validate:"omitempty,oneof=TECHNOLOGY BUSINESS EDUCATION HEALTH ARTS SPORTS ENTERTAINMENT NETWORKING OTHER"` // Event category
+	MaxTicketsPerUser  int    `json:"max_tickets_per_user" validate:"omitempty,min=1,max=100"`                                                             // Maximum tickets per user
+	BookingStartTime   string `json:"booking_start_time" validate:"omitempty,datetime"`                                                                    // When booking opens
+	BookingEndTime     string `json:"booking_end_time" validate:"omitempty,datetime"`                                                                      // When booking closes
+	RefundPolicy       string `json:"refund_policy" validate:"omitempty,max=2000"`                                                                         // Event refund policy
+	TermsAndConditions string `json:"terms_and_conditions" validate:"omitempty,max=5000"`                                                                  // Event terms and conditions
+	Tags               string `json:"tags" validate:"omitempty,max=500"`                                                                                   // Comma-separated tags
+
+	// Social Links
+	WebsiteURL   string `json:"website_url" validate:"omitempty,url,max=500"`   // Event website URL
+	FacebookURL  string `json:"facebook_url" validate:"omitempty,url,max=500"`  // Facebook page URL
+	TwitterURL   string `json:"twitter_url" validate:"omitempty,url,max=500"`   // Twitter profile URL
+	InstagramURL string `json:"instagram_url" validate:"omitempty,url,max=500"` // Instagram profile URL
+	LinkedinURL  string `json:"linkedin_url" validate:"omitempty,url,max=500"`  // LinkedIn profile URL
+
+	// Venue Details
+	VenueName    string  `json:"venue_name" validate:"omitempty,max=255"`         // Name of the venue
+	AddressLine1 string  `json:"address_line1" validate:"omitempty,max=255"`      // Primary address line
+	AddressLine2 string  `json:"address_line2" validate:"omitempty,max=255"`      // Secondary address line
+	City         string  `json:"city" validate:"omitempty,max=100"`               // City
+	State        string  `json:"state" validate:"omitempty,max=100"`              // State/Province
+	PostalCode   string  `json:"postal_code" validate:"omitempty,max=20"`         // Postal/ZIP code
+	Country      string  `json:"country" validate:"omitempty,max=100"`            // Country
+	Latitude     float64 `json:"latitude" validate:"omitempty,min=-90,max=90"`    // Latitude coordinate
+	Longitude    float64 `json:"longitude" validate:"omitempty,min=-180,max=180"` // Longitude coordinate
+
+	// Internal parsed time fields
+	TIME_Start        time.Time `json:"-" validate:"-"` // Internal field for parsed start time (not exposed in JSON)
+	TIME_End          time.Time `json:"-" validate:"-"` // Internal field for parsed end time (not exposed in JSON)
+	TIME_BookingStart time.Time `json:"-" validate:"-"` // Internal field for parsed booking start time
+	TIME_BookingEnd   time.Time `json:"-" validate:"-"` // Internal field for parsed booking end time
 }
 
 // time_parser is a custom validator function for validating datetime strings.
@@ -144,6 +196,28 @@ func (c *CreateEventDTO) Validate() error {
 		return fmt.Errorf("total ticket capacity (%d) exceeds event total seats (%d)", totalTicketCapacity, c.TotalSeats)
 	}
 
+	// Validate booking datetime fields if provided
+	if c.BookingStartTime != "" {
+		bst, err := time.Parse(time.RFC3339, c.BookingStartTime)
+		if err != nil {
+			return fmt.Errorf("invalid booking_start_time format: %w", err)
+		}
+		c.TIME_BookingStart = bst
+	}
+
+	if c.BookingEndTime != "" {
+		bet, err := time.Parse(time.RFC3339, c.BookingEndTime)
+		if err != nil {
+			return fmt.Errorf("invalid booking_end_time format: %w", err)
+		}
+		c.TIME_BookingEnd = bet
+
+		// Ensure booking end is after booking start if both are provided
+		if c.BookingStartTime != "" && bet.Before(c.TIME_BookingStart) {
+			return fmt.Errorf("booking_end_time must be after booking_start_time")
+		}
+	}
+
 	c.TIME_Start = st // Set parsed start time for internal use
 	c.TIME_End = et   // Set parsed end time for internal use
 	return v.Struct(c)
@@ -197,18 +271,75 @@ func (c CreateEventDTO) ToCreateEventParams(slug string) (repository.CreateEvent
 		status = repository.EventStatusCREATED
 	}
 
+	// Handle optional booking times
+	var bookingStartTime, bookingEndTime pgtype.Timestamptz
+	if c.BookingStartTime != "" {
+		bookingStartTime = pgtype.Timestamptz{Time: c.TIME_BookingStart, InfinityModifier: pgtype.Finite, Valid: true}
+	}
+	if c.BookingEndTime != "" {
+		bookingEndTime = pgtype.Timestamptz{Time: c.TIME_BookingEnd, InfinityModifier: pgtype.Finite, Valid: true}
+	}
+
+	// Convert tags string to array
+	var tagsArray []string
+	if c.Tags != "" {
+		tagsArray = strings.Split(c.Tags, ",")
+		for i, tag := range tagsArray {
+			tagsArray[i] = strings.TrimSpace(tag)
+		}
+	}
+
+	// Convert coordinates to pgtype.Numeric
+	var latitude, longitude pgtype.Numeric
+	if c.Latitude != 0 {
+		latitude = pgtype.Numeric{Valid: true}
+		latitude.Scan(fmt.Sprintf("%.8f", c.Latitude))
+	}
+	if c.Longitude != 0 {
+		longitude = pgtype.Numeric{Valid: true}
+		longitude.Scan(fmt.Sprintf("%.8f", c.Longitude))
+	}
+
 	return repository.CreateEventParams{
-		Title:          c.Title,
-		Description:    c.Description,
-		Slug:           slug,
-		StartTime:      st,
-		EndTime:        et,
-		Location:       location,
-		AdminID:        adminUUID,
-		Banner:         c.BannerURL,
-		Icon:           c.IconURL,
-		TotalSeats:     int32(c.TotalSeats),
-		AvailableSeats: int32(c.AvailableSeats),
-		Status:         status,
+		Title:              c.Title,
+		Description:        c.Description,
+		Slug:               slug,
+		StartTime:          st,
+		EndTime:            et,
+		Location:           location,
+		AdminID:            adminUUID,
+		Banner:             c.BannerURL,
+		Icon:               c.IconURL,
+		TotalSeats:         int32(c.TotalSeats),
+		AvailableSeats:     int32(c.AvailableSeats),
+		Status:             status,
+		OrganizerName:      stringToPgText(c.OrganizerName),
+		OrganizerEmail:     stringToPgText(c.OrganizerEmail),
+		OrganizerPhone:     stringToPgText(c.OrganizerPhone),
+		Organization:       stringToPgText(c.Organization),
+		ContactEmail:       stringToPgText(c.ContactEmail),
+		ContactPhone:       stringToPgText(c.ContactPhone),
+		RefundPolicy:       stringToPgText(c.RefundPolicy),
+		TermsAndConditions: stringToPgText(c.TermsAndConditions),
+		EventType:          stringToPgText(c.EventType),
+		Category:           stringToPgText(c.Category),
+		MaxTicketsPerUser:  pgtype.Int4{Int32: int32(c.MaxTicketsPerUser), Valid: c.MaxTicketsPerUser > 0},
+		BookingStartTime:   bookingStartTime,
+		BookingEndTime:     bookingEndTime,
+		Tags:               tagsArray,
+		WebsiteUrl:         stringToPgText(c.WebsiteURL),
+		FacebookUrl:        stringToPgText(c.FacebookURL),
+		TwitterUrl:         stringToPgText(c.TwitterURL),
+		InstagramUrl:       stringToPgText(c.InstagramURL),
+		LinkedinUrl:        stringToPgText(c.LinkedinURL),
+		VenueName:          stringToPgText(c.VenueName),
+		AddressLine1:       stringToPgText(c.AddressLine1),
+		AddressLine2:       stringToPgText(c.AddressLine2),
+		City:               stringToPgText(c.City),
+		State:              stringToPgText(c.State),
+		PostalCode:         stringToPgText(c.PostalCode),
+		Country:            stringToPgText(c.Country),
+		Latitude:           latitude,
+		Longitude:          longitude,
 	}, nil
 }
