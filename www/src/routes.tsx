@@ -8,7 +8,7 @@ import DashboardPage from "./pages/dashboard";
 import AdminDashboardPage from "./pages/admin-dashboard";
 import AdminPage from "./pages/admin";
 import CreateEventPage from "./pages/create-event";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/protected-route";
 
 export default function AppRoutes() {
     return (
