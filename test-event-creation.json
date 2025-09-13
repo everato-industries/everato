@@ -1,0 +1,46 @@
+{
+    "title": "Tech Conference 2025",
+    "description": "A comprehensive technology conference featuring the latest innovations in AI, web development, and cloud computing. Join industry experts for two days of learning.",
+    "start_time": "2025-12-15T09:00:00Z",
+    "end_time": "2025-12-16T18:00:00Z",
+    "location": "San Francisco Convention Center",
+    "admin_id": "3259cbaf-6abe-45fc-b54c-9158d27c031c",
+    "banner_url": "https://example.com/tech-conf-banner.jpg",
+    "icon_url": "https://example.com/tech-conf-icon.png",
+    "total_seats": 500,
+    "available_seats": 500,
+    "status": "CREATED",
+    "ticket_types": [
+        {
+            "name": "General Admission",
+            "price": 199.99,
+            "available_tickets": 300
+        },
+        {
+            "name": "VIP Access",
+            "price": 399.99,
+            "available_tickets": 50
+        },
+        {
+            "name": "Student Discount",
+            "price": 99.99,
+            "available_tickets": 150
+        }
+    ],
+    "coupons": [
+        {
+            "code": "EARLY20",
+            "discount_percentage": 20.0,
+            "valid_from": "2025-10-01T00:00:00Z",
+            "valid_until": "2025-11-30T23:59:59Z",
+            "usage_limit": 100
+        },
+        {
+            "code": "STUDENT",
+            "discount_percentage": 15.0,
+            "valid_from": "2025-10-01T00:00:00Z",
+            "valid_until": "2025-12-14T23:59:59Z",
+            "usage_limit": 200
+        }
+    ]
+}

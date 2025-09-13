@@ -19,6 +19,22 @@ const (
 	LocationInPerson = "in-person" // Physical events held at a specific venue
 )
 
+// TicketTypeDTO represents the data for creating a ticket type
+type TicketTypeDTO struct {
+	Name             string  `json:"name" validate:"required,min=2,max=100"`                // Ticket type name (e.g., "VIP", "General", "Student")
+	Price            float64 `json:"price" validate:"required,min=0,max=100000"`            // Ticket price
+	AvailableTickets int     `json:"available_tickets" validate:"required,min=1,max=10000"` // Number of tickets available for this type
+}
+
+// CouponDTO represents the data for creating a coupon
+type CouponDTO struct {
+	Code               string  `json:"code" validate:"required,min=3,max=50"`                 // Coupon code (e.g., "EARLY20", "STUDENT")
+	DiscountPercentage float64 `json:"discount_percentage" validate:"required,min=1,max=100"` // Discount percentage (1-100%)
+	ValidFrom          string  `json:"valid_from" validate:"required,datetime"`               // When coupon becomes valid (ISO 8601)
+	ValidUntil         string  `json:"valid_until" validate:"required,datetime"`              // When coupon expires (ISO 8601)
+	UsageLimit         int     `json:"usage_limit" validate:"required,min=1,max=10000"`       // Maximum number of times coupon can be used
+}
+
 // CreateEventDTO represents the data transfer object for creating a new event.
 // It handles the JSON deserialization and validation of event creation requests.
 //
@@ -27,20 +43,23 @@ const (
 //   - Specifies validation rules for each field
 //   - Provides methods to convert the validated data to repository formats
 //   - Transforms string representations to appropriate database types (UUIDs, timestamps)
+//   - Includes ticket types and coupons for comprehensive event creation
 type CreateEventDTO struct {
-	Title          string    `json:"title" validate:"required,min=2,max=100"`                               // Event title (2-100 chars)
-	Description    string    `json:"description" validate:"required,min=10,max=500"`                        // Event description (10-500 chars)
-	StartTime      string    `json:"start_time" validate:"required,datetime"`                               // Event start time in ISO 8601 format
-	EndTime        string    `json:"end_time" validate:"required,datetime"`                                 // Event end time in ISO 8601 format
-	Location       string    `json:"location" validate:"required,min=2,max=100"`                            // Event location (online or in-person)
-	AdminID        string    `json:"admin_id" validate:"required,uuid"`                                     // UUID of the event administrator
-	BannerURL      string    `json:"banner_url" validate:"omitempty,url"`                                   // Optional URL to event banner image
-	IconURL        string    `json:"icon_url" validate:"omitempty,url"`                                     // Optional URL to event icon image
-	TotalSeats     int       `json:"total_seats" validate:"required,min=1,max=10000"`                       // Total capacity of the event (1-10000)
-	AvailableSeats int       `json:"available_seats" validate:"required,min=0,max=10000"`                   // Initially available seats for booking
-	Status         string    `json:"status" validate:"omitempty,oneof=CREATED STARTED COMPLETED CANCELLED"` // Event status (defaults to CREATED)
-	TIME_Start     time.Time `json:"-" validate:"-"`                                                        // Internal field for parsed start time (not exposed in JSON)
-	TIME_End       time.Time `json:"-" validate:"-"`                                                        // Internal field for parsed end time (not exposed in JSON)
+	Title          string          `json:"title" validate:"required,min=2,max=100"`                               // Event title (2-100 chars)
+	Description    string          `json:"description" validate:"required,min=10,max=500"`                        // Event description (10-500 chars)
+	StartTime      string          `json:"start_time" validate:"required,datetime"`                               // Event start time in ISO 8601 format
+	EndTime        string          `json:"end_time" validate:"required,datetime"`                                 // Event end time in ISO 8601 format
+	Location       string          `json:"location" validate:"required,min=2,max=100"`                            // Event location (online or in-person)
+	AdminID        string          `json:"admin_id" validate:"required,uuid"`                                     // UUID of the event administrator
+	BannerURL      string          `json:"banner_url" validate:"omitempty,url"`                                   // Optional URL to event banner image
+	IconURL        string          `json:"icon_url" validate:"omitempty,url"`                                     // Optional URL to event icon image
+	TotalSeats     int             `json:"total_seats" validate:"required,min=1,max=10000"`                       // Total capacity of the event (1-10000)
+	AvailableSeats int             `json:"available_seats" validate:"required,min=0,max=10000"`                   // Initially available seats for booking
+	Status         string          `json:"status" validate:"omitempty,oneof=CREATED STARTED COMPLETED CANCELLED"` // Event status (defaults to CREATED)
+	TicketTypes    []TicketTypeDTO `json:"ticket_types" validate:"required,min=1,dive"`                           // Ticket types for the event (at least 1 required)
+	Coupons        []CouponDTO     `json:"coupons" validate:"omitempty,dive"`                                     // Optional coupons for the event
+	TIME_Start     time.Time       `json:"-" validate:"-"`                                                        // Internal field for parsed start time (not exposed in JSON)
+	TIME_End       time.Time       `json:"-" validate:"-"`                                                        // Internal field for parsed end time (not exposed in JSON)
 }
 
 // time_parser is a custom validator function for validating datetime strings.
@@ -89,13 +108,40 @@ func (c *CreateEventDTO) Validate() error {
 	_ = v.RegisterValidation("datetime", time_parser) // Register custom datetime validator
 	_ = v.RegisterValidation("uuid", uuid_parser)     // Register custom UUID validator
 
+	// Validate main event datetime fields
 	st, err := time.Parse(time.RFC3339, c.StartTime)
 	if err != nil {
-		return err // Return error if StartTime is not in valid format
+		return fmt.Errorf("invalid start_time format: %w", err)
 	}
 	et, err := time.Parse(time.RFC3339, c.EndTime)
 	if err != nil {
-		return err // Return error if EndTime is not in valid format
+		return fmt.Errorf("invalid end_time format: %w", err)
+	}
+
+	// Validate coupon datetime fields
+	for i, coupon := range c.Coupons {
+		validFrom, err := time.Parse(time.RFC3339, coupon.ValidFrom)
+		if err != nil {
+			return fmt.Errorf("invalid valid_from format in coupon %d: %w", i, err)
+		}
+		validUntil, err := time.Parse(time.RFC3339, coupon.ValidUntil)
+		if err != nil {
+			return fmt.Errorf("invalid valid_until format in coupon %d: %w", i, err)
+		}
+
+		// Ensure coupon validity period makes sense
+		if validUntil.Before(validFrom) {
+			return fmt.Errorf("coupon %d: valid_until must be after valid_from", i)
+		}
+	}
+
+	// Validate that ticket types don't exceed total seats
+	totalTicketCapacity := 0
+	for _, ticketType := range c.TicketTypes {
+		totalTicketCapacity += ticketType.AvailableTickets
+	}
+	if totalTicketCapacity > c.TotalSeats {
+		return fmt.Errorf("total ticket capacity (%d) exceeds event total seats (%d)", totalTicketCapacity, c.TotalSeats)
 	}
 
 	c.TIME_Start = st // Set parsed start time for internal use

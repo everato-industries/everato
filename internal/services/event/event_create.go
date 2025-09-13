@@ -5,11 +5,14 @@ package event
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/dtg-lucifer/everato/internal/db/repository"
 	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/dtg-lucifer/everato/pkg"
-	"github.com/jackc/pgx/v5"
 )
 
 // CreateEvent handles the creation of a new event in the system.
@@ -189,11 +192,8 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 		return
 	}
 
-	fmt.Printf("%+v", params)
-
+	// Create the main event first
 	event, err := repo.WithTx(tx).CreateEvent(wr.R.Context(), params)
-	// Handle any other errors that might have occurred during event creation
-	// This is a catch-all for unexpected issues
 	if err != nil {
 		logger.StdoutLogger.Error("Failed to create event in database", "err", err.Error())
 		tx.Rollback(wr.R.Context()) // Rollback the transaction
@@ -204,6 +204,89 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 			},
 		)
 		return
+	}
+
+	// Create ticket types for the event
+	var createdTicketTypes []repository.TicketType
+	for i, ticketTypeDTO := range eventDTO.TicketTypes {
+		ticketTypeParams := repository.CreateTicketTypeParams{
+			Name:             ticketTypeDTO.Name,
+			EventID:          event.ID,
+			Price:            ticketTypeDTO.Price,
+			AvailableTickets: int32(ticketTypeDTO.AvailableTickets),
+		}
+
+		ticketType, err := repo.WithTx(tx).CreateTicketType(wr.R.Context(), ticketTypeParams)
+		if err != nil {
+			logger.StdoutLogger.Error("Failed to create ticket type", "ticketTypeIndex", i, "err", err.Error())
+			tx.Rollback(wr.R.Context()) // Rollback the transaction
+			wr.Status(http.StatusInternalServerError).Json(
+				utils.M{
+					"message": fmt.Sprintf("Failed to create ticket type '%s'", ticketTypeDTO.Name),
+					"err":     err.Error(),
+				},
+			)
+			return
+		}
+		createdTicketTypes = append(createdTicketTypes, ticketType)
+	}
+
+	// Create coupons for the event (if any)
+	var createdCoupons []repository.Coupon
+	for i, couponDTO := range eventDTO.Coupons {
+		// Parse coupon dates manually to ensure proper pgtype.Timestamptz format
+		validFromTime, err := time.Parse(time.RFC3339, couponDTO.ValidFrom)
+		if err != nil {
+			logger.StdoutLogger.Error("Failed to parse coupon valid_from", "couponIndex", i, "err", err.Error())
+			tx.Rollback(wr.R.Context())
+			wr.Status(http.StatusBadRequest).Json(
+				utils.M{
+					"message": fmt.Sprintf("Invalid valid_from date in coupon '%s'", couponDTO.Code),
+					"err":     err.Error(),
+				},
+			)
+			return
+		}
+
+		validUntilTime, err := time.Parse(time.RFC3339, couponDTO.ValidUntil)
+		if err != nil {
+			logger.StdoutLogger.Error("Failed to parse coupon valid_until", "couponIndex", i, "err", err.Error())
+			tx.Rollback(wr.R.Context())
+			wr.Status(http.StatusBadRequest).Json(
+				utils.M{
+					"message": fmt.Sprintf("Invalid valid_until date in coupon '%s'", couponDTO.Code),
+					"err":     err.Error(),
+				},
+			)
+			return
+		}
+
+		// Create properly initialized Timestamptz values with Valid=true
+		validFrom := pgtype.Timestamptz{Time: validFromTime, InfinityModifier: pgtype.Finite, Valid: true}
+		validUntil := pgtype.Timestamptz{Time: validUntilTime, InfinityModifier: pgtype.Finite, Valid: true}
+
+		couponParams := repository.CreateCouponParams{
+			EventID:            event.ID,
+			Code:               couponDTO.Code,
+			DiscountPercentage: couponDTO.DiscountPercentage,
+			ValidFrom:          validFrom,
+			ValidUntil:         validUntil,
+			UsageLimit:         int32(couponDTO.UsageLimit),
+		}
+
+		coupon, err := repo.WithTx(tx).CreateCoupon(wr.R.Context(), couponParams)
+		if err != nil {
+			logger.StdoutLogger.Error("Failed to create coupon", "couponIndex", i, "err", err.Error())
+			tx.Rollback(wr.R.Context()) // Rollback the transaction
+			wr.Status(http.StatusInternalServerError).Json(
+				utils.M{
+					"message": fmt.Sprintf("Failed to create coupon '%s'", couponDTO.Code),
+					"err":     err.Error(),
+				},
+			)
+			return
+		}
+		createdCoupons = append(createdCoupons, coupon)
 	}
 
 	// Commit the transaction to finalize the event creation
@@ -221,11 +304,19 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 	}
 
 	// Return a successful response with HTTP 201 Created status
-	// Include the created event data in the response body
+	// Include the created event data along with ticket types and coupons
 	wr.Status(http.StatusCreated).Json(
 		utils.M{
-			"message": "Event created successfully!",
-			"data":    event,
+			"message": "Event created successfully with ticket types and coupons!",
+			"data": utils.M{
+				"event":        event,
+				"ticket_types": createdTicketTypes,
+				"coupons":      createdCoupons,
+				"stats": utils.M{
+					"ticket_types_created": len(createdTicketTypes),
+					"coupons_created":      len(createdCoupons),
+				},
+			},
 		},
 	)
 }

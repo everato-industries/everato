@@ -46,6 +46,62 @@ func (q *Queries) CountUpcomingEvents(ctx context.Context) (int64, error) {
 	return upcoming_events, err
 }
 
+const createCoupon = `-- name: CreateCoupon :one
+
+INSERT INTO coupons (
+    event_id,
+    code,
+    discount_percentage,
+    valid_from,
+    valid_until,
+    usage_limit,
+    usage_count
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    0
+) RETURNING id, event_id, code, discount_percentage, valid_from, valid_until, usage_limit, created_at, updated_at, usage_count
+`
+
+type CreateCouponParams struct {
+	EventID            pgtype.UUID        `json:"event_id"`
+	Code               string             `json:"code"`
+	DiscountPercentage float64            `json:"discount_percentage"`
+	ValidFrom          pgtype.Timestamptz `json:"valid_from"`
+	ValidUntil         pgtype.Timestamptz `json:"valid_until"`
+	UsageLimit         int32              `json:"usage_limit"`
+}
+
+// Coupon Operations
+func (q *Queries) CreateCoupon(ctx context.Context, arg CreateCouponParams) (Coupon, error) {
+	row := q.db.QueryRow(ctx, createCoupon,
+		arg.EventID,
+		arg.Code,
+		arg.DiscountPercentage,
+		arg.ValidFrom,
+		arg.ValidUntil,
+		arg.UsageLimit,
+	)
+	var i Coupon
+	err := row.Scan(
+		&i.ID,
+		&i.EventID,
+		&i.Code,
+		&i.DiscountPercentage,
+		&i.ValidFrom,
+		&i.ValidUntil,
+		&i.UsageLimit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UsageCount,
+	)
+	return i, err
+}
+
 const createEvent = `-- name: CreateEvent :one
 INSERT INTO events (
     title,
@@ -131,6 +187,47 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 	return i, err
 }
 
+const createTicketType = `-- name: CreateTicketType :one
+
+INSERT INTO ticket_types (
+    name,
+    event_id,
+    price,
+    available_tickets
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+) RETURNING id, name, event_id, price, available_tickets
+`
+
+type CreateTicketTypeParams struct {
+	Name             string      `json:"name"`
+	EventID          pgtype.UUID `json:"event_id"`
+	Price            float64     `json:"price"`
+	AvailableTickets int32       `json:"available_tickets"`
+}
+
+// Ticket Type Operations
+func (q *Queries) CreateTicketType(ctx context.Context, arg CreateTicketTypeParams) (TicketType, error) {
+	row := q.db.QueryRow(ctx, createTicketType,
+		arg.Name,
+		arg.EventID,
+		arg.Price,
+		arg.AvailableTickets,
+	)
+	var i TicketType
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.EventID,
+		&i.Price,
+		&i.AvailableTickets,
+	)
+	return i, err
+}
+
 const deleteEvent = `-- name: DeleteEvent :exec
 DELETE FROM events
 WHERE id = $1
@@ -141,8 +238,45 @@ func (q *Queries) DeleteEvent(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const getCouponsByEventID = `-- name: GetCouponsByEventID :many
+SELECT id, event_id, code, discount_percentage, valid_from, valid_until, usage_limit, created_at, updated_at, usage_count FROM coupons
+WHERE event_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetCouponsByEventID(ctx context.Context, eventID pgtype.UUID) ([]Coupon, error) {
+	rows, err := q.db.Query(ctx, getCouponsByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Coupon
+	for rows.Next() {
+		var i Coupon
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventID,
+			&i.Code,
+			&i.DiscountPercentage,
+			&i.ValidFrom,
+			&i.ValidUntil,
+			&i.UsageLimit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UsageCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDashboardStats = `-- name: GetDashboardStats :one
-SELECT 
+SELECT
     COUNT(*) as total_events,
     COUNT(CASE WHEN status = 'CREATED' THEN 1 END) as created_events,
     COUNT(CASE WHEN status = 'STARTED' THEN 1 END) as active_events,
@@ -276,6 +410,65 @@ func (q *Queries) GetRecentEvents(ctx context.Context, limit int32) ([]Event, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTicketTypesByEventID = `-- name: GetTicketTypesByEventID :many
+SELECT id, name, event_id, price, available_tickets FROM ticket_types
+WHERE event_id = $1
+ORDER BY price ASC
+`
+
+func (q *Queries) GetTicketTypesByEventID(ctx context.Context, eventID pgtype.UUID) ([]TicketType, error) {
+	rows, err := q.db.Query(ctx, getTicketTypesByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TicketType
+	for rows.Next() {
+		var i TicketType
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.EventID,
+			&i.Price,
+			&i.AvailableTickets,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getValidCouponByCode = `-- name: GetValidCouponByCode :one
+SELECT id, event_id, code, discount_percentage, valid_from, valid_until, usage_limit, created_at, updated_at, usage_count FROM coupons
+WHERE code = $1 
+    AND valid_from <= CURRENT_TIMESTAMP 
+    AND valid_until >= CURRENT_TIMESTAMP 
+    AND usage_count < usage_limit
+LIMIT 1
+`
+
+func (q *Queries) GetValidCouponByCode(ctx context.Context, code string) (Coupon, error) {
+	row := q.db.QueryRow(ctx, getValidCouponByCode, code)
+	var i Coupon
+	err := row.Scan(
+		&i.ID,
+		&i.EventID,
+		&i.Code,
+		&i.DiscountPercentage,
+		&i.ValidFrom,
+		&i.ValidUntil,
+		&i.UsageLimit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UsageCount,
+	)
+	return i, err
 }
 
 const listEvents = `-- name: ListEvents :many
@@ -498,6 +691,31 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.UpdatedAt,
 		&i.Slug,
 		&i.Status,
+	)
+	return i, err
+}
+
+const updateTicketTypeAvailability = `-- name: UpdateTicketTypeAvailability :one
+UPDATE ticket_types
+SET available_tickets = $2
+WHERE id = $1
+RETURNING id, name, event_id, price, available_tickets
+`
+
+type UpdateTicketTypeAvailabilityParams struct {
+	ID               pgtype.UUID `json:"id"`
+	AvailableTickets int32       `json:"available_tickets"`
+}
+
+func (q *Queries) UpdateTicketTypeAvailability(ctx context.Context, arg UpdateTicketTypeAvailabilityParams) (TicketType, error) {
+	row := q.db.QueryRow(ctx, updateTicketTypeAvailability, arg.ID, arg.AvailableTickets)
+	var i TicketType
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.EventID,
+		&i.Price,
+		&i.AvailableTickets,
 	)
 	return i, err
 }

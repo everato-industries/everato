@@ -114,3 +114,63 @@ ORDER BY
         ELSE ABS(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)))
     END ASC
 LIMIT $1;
+
+-- Ticket Type Operations
+
+-- name: CreateTicketType :one
+INSERT INTO ticket_types (
+    name,
+    event_id,
+    price,
+    available_tickets
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+) RETURNING *;
+
+-- name: GetTicketTypesByEventID :many
+SELECT * FROM ticket_types
+WHERE event_id = $1
+ORDER BY price ASC;
+
+-- name: UpdateTicketTypeAvailability :one
+UPDATE ticket_types
+SET available_tickets = $2
+WHERE id = $1
+RETURNING *;
+
+-- Coupon Operations
+
+-- name: CreateCoupon :one
+INSERT INTO coupons (
+    event_id,
+    code,
+    discount_percentage,
+    valid_from,
+    valid_until,
+    usage_limit,
+    usage_count
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    0
+) RETURNING *;
+
+-- name: GetCouponsByEventID :many
+SELECT * FROM coupons
+WHERE event_id = $1
+ORDER BY created_at DESC;
+
+-- name: GetValidCouponByCode :one
+SELECT * FROM coupons
+WHERE code = $1
+    AND valid_from <= CURRENT_TIMESTAMP
+    AND valid_until >= CURRENT_TIMESTAMP
+    AND usage_count < usage_limit
+LIMIT 1;

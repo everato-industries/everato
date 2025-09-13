@@ -432,6 +432,7 @@ type Coupon struct {
 	UsageLimit         int32              `json:"usage_limit"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+	UsageCount         int32              `json:"usage_count"`
 }
 
 type Event struct {
