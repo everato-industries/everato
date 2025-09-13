@@ -1,138 +1,47 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { type Event, eventAPI } from "../lib/api";
 import Layout from "../components/layout";
 
-interface Event {
-    id: string;
-    title: string;
-    description: string;
-    date: string;
-    location: string;
-    price: number;
-    image?: string;
-    slug: string;
-    category: string;
-}
-
 interface FilterOptions {
-    category: string;
-    location: string;
-    priceRange: string;
-    dateRange: string;
     sortBy: string;
 }
 
 export default function EventsPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalEvents, setTotalEvents] = useState(0);
     const [filters, setFilters] = useState<FilterOptions>({
-        category: "",
-        location: "",
-        priceRange: "",
-        dateRange: "",
         sortBy: "date",
     });
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
 
-    const categories = [
-        "All Categories",
-        "Technology",
-        "Music",
-        "Food & Drink",
-        "Business",
-        "Sports",
-        "Arts & Culture",
-        "Health & Wellness",
-    ];
-
-    const locations = [
-        "All Locations",
-        "New York, NY",
-        "San Francisco, CA",
-        "Los Angeles, CA",
-        "Chicago, IL",
-        "Austin, TX",
-        "Seattle, WA",
-    ];
+    const eventsPerPage = 6;
 
     useEffect(() => {
         const fetchEvents = async () => {
             try {
                 setLoading(true);
-                // Mock API call - replace with actual API
-                setTimeout(() => {
-                    const mockEvents: Event[] = [
-                        {
-                            id: "1",
-                            title: "Tech Conference 2025",
-                            description:
-                                "Annual technology conference featuring the latest in AI and web development.",
-                            date: "2025-10-15",
-                            location: "San Francisco, CA",
-                            price: 299,
-                            slug: "tech-conference-2025",
-                            category: "Technology",
-                        },
-                        {
-                            id: "2",
-                            title: "Music Festival",
-                            description:
-                                "Three-day outdoor music festival with top artists.",
-                            date: "2025-08-20",
-                            location: "Austin, TX",
-                            price: 199,
-                            slug: "music-festival-2025",
-                            category: "Music",
-                        },
-                        {
-                            id: "3",
-                            title: "Food & Wine Expo",
-                            description:
-                                "Culinary experience with renowned chefs and wine tastings.",
-                            date: "2025-09-10",
-                            location: "New York, NY",
-                            price: 149,
-                            slug: "food-wine-expo",
-                            category: "Food & Drink",
-                        },
-                        {
-                            id: "4",
-                            title: "Business Leadership Summit",
-                            description:
-                                "Learn from industry leaders and network with professionals.",
-                            date: "2025-11-05",
-                            location: "Chicago, IL",
-                            price: 399,
-                            slug: "business-leadership-summit",
-                            category: "Business",
-                        },
-                        {
-                            id: "5",
-                            title: "Art Gallery Opening",
-                            description:
-                                "Modern art exhibition featuring contemporary artists.",
-                            date: "2025-07-22",
-                            location: "Los Angeles, CA",
-                            price: 75,
-                            slug: "art-gallery-opening",
-                            category: "Arts & Culture",
-                        },
-                        {
-                            id: "6",
-                            title: "Wellness Retreat",
-                            description:
-                                "Weekend wellness retreat with yoga, meditation, and spa treatments.",
-                            date: "2025-09-30",
-                            location: "Seattle, WA",
-                            price: 249,
-                            slug: "wellness-retreat",
-                            category: "Health & Wellness",
-                        },
-                    ];
 
-                    // Apply filters
-                    let filteredEvents = mockEvents;
+                // Calculate offset for pagination
+                const offset = (currentPage - 1) * eventsPerPage;
+
+                // Fetch events from API
+                const response = await eventAPI.getAllEvents(
+                    eventsPerPage,
+                    offset,
+                );
+
+                if (response.data && response.data.data) {
+                    const fetchedEvents: Event[] =
+                        Array.isArray(response.data.data)
+                            ? response.data.data
+                            : [];
+
+                    // Apply client-side filters for search query
+                    let filteredEvents = fetchedEvents;
 
                     if (searchQuery) {
                         filteredEvents = filteredEvents.filter((event) =>
@@ -145,48 +54,35 @@ export default function EventsPage() {
                         );
                     }
 
-                    if (
-                        filters.category &&
-                        filters.category !== "All Categories"
-                    ) {
-                        filteredEvents = filteredEvents.filter((event) =>
-                            event.category === filters.category
-                        );
-                    }
-
-                    if (
-                        filters.location && filters.location !== "All Locations"
-                    ) {
-                        filteredEvents = filteredEvents.filter((event) =>
-                            event.location === filters.location
-                        );
-                    }
-
                     // Sort events
-                    if (filters.sortBy === "price") {
-                        filteredEvents.sort((a, b) => a.price - b.price);
-                    } else if (filters.sortBy === "title") {
+                    if (filters.sortBy === "title") {
                         filteredEvents.sort((a, b) =>
                             a.title.localeCompare(b.title)
                         );
                     } else {
                         filteredEvents.sort((a, b) =>
-                            new Date(a.date).getTime() -
-                            new Date(b.date).getTime()
+                            new Date(a.start_time).getTime() -
+                            new Date(b.start_time).getTime()
                         );
                     }
 
                     setEvents(filteredEvents);
-                    setLoading(false);
-                }, 500);
+                    setTotalEvents(filteredEvents.length);
+                } else {
+                    setEvents([]);
+                    setTotalEvents(0);
+                }
             } catch (error) {
                 console.error("Error fetching events:", error);
+                setEvents([]);
+                setTotalEvents(0);
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchEvents();
-    }, [filters, searchQuery]);
+    }, [filters, searchQuery, currentPage, eventsPerPage]);
 
     const handleFilterChange = (key: keyof FilterOptions, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -256,93 +152,7 @@ export default function EventsPage() {
                 <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                     {/* Filters */}
                     <div className="bg-gray-50 mb-8 p-6">
-                        <div className="gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
-                            <div>
-                                <label className="block mb-2 font-medium text-black text-sm">
-                                    Category
-                                </label>
-                                <select
-                                    className="px-3 py-2 border border-gray-300 focus:border-black focus:outline-none w-full"
-                                    value={filters.category}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "category",
-                                            e.target.value,
-                                        )}
-                                >
-                                    {categories.map((category) => (
-                                        <option key={category} value={category}>
-                                            {category}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block mb-2 font-medium text-black text-sm">
-                                    Location
-                                </label>
-                                <select
-                                    className="px-3 py-2 border border-gray-300 focus:border-black focus:outline-none w-full"
-                                    value={filters.location}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "location",
-                                            e.target.value,
-                                        )}
-                                >
-                                    {locations.map((location) => (
-                                        <option key={location} value={location}>
-                                            {location}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block mb-2 font-medium text-black text-sm">
-                                    Price Range
-                                </label>
-                                <select
-                                    className="px-3 py-2 border border-gray-300 focus:border-black focus:outline-none w-full"
-                                    value={filters.priceRange}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "priceRange",
-                                            e.target.value,
-                                        )}
-                                >
-                                    <option value="">All Prices</option>
-                                    <option value="0-50">$0 - $50</option>
-                                    <option value="51-100">$51 - $100</option>
-                                    <option value="101-200">$101 - $200</option>
-                                    <option value="201+">$201+</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block mb-2 font-medium text-black text-sm">
-                                    Date Range
-                                </label>
-                                <select
-                                    className="px-3 py-2 border border-gray-300 focus:border-black focus:outline-none w-full"
-                                    value={filters.dateRange}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "dateRange",
-                                            e.target.value,
-                                        )}
-                                >
-                                    <option value="">All Dates</option>
-                                    <option value="today">Today</option>
-                                    <option value="week">This Week</option>
-                                    <option value="month">This Month</option>
-                                    <option value="quarter">
-                                        Next 3 Months
-                                    </option>
-                                </select>
-                            </div>
-
+                        <div className="gap-4 grid grid-cols-1 md:grid-cols-2">
                             <div>
                                 <label className="block mb-2 font-medium text-black text-sm">
                                     Sort By
@@ -357,9 +167,18 @@ export default function EventsPage() {
                                         )}
                                 >
                                     <option value="date">Date</option>
-                                    <option value="price">Price</option>
                                     <option value="title">Title</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block mb-2 font-medium text-black text-sm">
+                                    Results per page: {eventsPerPage}
+                                </label>
+                                <div className="text-gray-600 text-sm">
+                                    Showing {events.length} of {totalEvents}
+                                    {" "}
+                                    events
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -430,13 +249,13 @@ export default function EventsPage() {
 
                                         <div className="mb-2">
                                             <span className="bg-gray-200 px-2 py-1 text-gray-700 text-xs uppercase tracking-wide">
-                                                {event.category}
+                                                {event.status}
                                             </span>
                                         </div>
 
                                         <div className="mb-2">
                                             <span className="text-gray-500 text-sm">
-                                                {formatDate(event.date)}
+                                                {formatDate(event.start_time)}
                                             </span>
                                         </div>
 
@@ -453,7 +272,8 @@ export default function EventsPage() {
                                                 📍 {event.location}
                                             </span>
                                             <span className="font-semibold text-black text-lg">
-                                                ${event.price}
+                                                {event.available_seats} /{" "}
+                                                {event.total_seats} seats
                                             </span>
                                         </div>
 
@@ -468,23 +288,63 @@ export default function EventsPage() {
                             </div>
                         )}
 
-                    {/* Pagination - Mock for now */}
+                    {/* Pagination */}
                     {events.length > 0 && (
                         <div className="flex justify-center mt-12">
                             <div className="flex space-x-2">
-                                <button className="px-4 py-2 btn-secondary">
+                                <button
+                                    className={`px-4 py-2 ${
+                                        currentPage === 1
+                                            ? "btn-secondary opacity-50 cursor-not-allowed"
+                                            : "btn-secondary"
+                                    }`}
+                                    onClick={() =>
+                                        currentPage > 1 &&
+                                        setCurrentPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                >
                                     Previous
                                 </button>
-                                <button className="px-4 py-2 btn-primary">
-                                    1
-                                </button>
-                                <button className="px-4 py-2 btn-secondary">
-                                    2
-                                </button>
-                                <button className="px-4 py-2 btn-secondary">
-                                    3
-                                </button>
-                                <button className="px-4 py-2 btn-secondary">
+
+                                {/* Show page numbers */}
+                                {[...Array(
+                                    Math.ceil(totalEvents / eventsPerPage) || 1,
+                                )].map((_, index) => {
+                                    const pageNumber = index + 1;
+                                    return (
+                                        <button
+                                            key={pageNumber}
+                                            className={`px-4 py-2 ${
+                                                currentPage === pageNumber
+                                                    ? "btn-primary"
+                                                    : "btn-secondary"
+                                            }`}
+                                            onClick={() =>
+                                                setCurrentPage(pageNumber)}
+                                        >
+                                            {pageNumber}
+                                        </button>
+                                    );
+                                })}
+
+                                <button
+                                    className={`px-4 py-2 ${
+                                        currentPage >=
+                                                Math.ceil(
+                                                    totalEvents / eventsPerPage,
+                                                )
+                                            ? "btn-secondary opacity-50 cursor-not-allowed"
+                                            : "btn-secondary"
+                                    }`}
+                                    onClick={() =>
+                                        currentPage <
+                                            Math.ceil(
+                                                totalEvents / eventsPerPage,
+                                            ) &&
+                                        setCurrentPage(currentPage + 1)}
+                                    disabled={currentPage >=
+                                        Math.ceil(totalEvents / eventsPerPage)}
+                                >
                                     Next
                                 </button>
                             </div>

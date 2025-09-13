@@ -1,72 +1,36 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../lib/api";
+import { type Event, eventAPI } from "../lib/api";
 import Layout from "../components/layout";
-
-interface Event {
-    id: string;
-    title: string;
-    description: string;
-    date: string;
-    location: string;
-    price: number;
-    image?: string;
-    slug: string;
-}
 
 export default function HomePage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchData() {
+        async function fetchRecentEvents() {
             try {
-                // Health check
-                const healthResponse = await api.get("/health");
-                console.log("Health check:", healthResponse.data);
+                setLoading(true);
 
-                // Mock events data for now
-                setTimeout(() => {
-                    setEvents([
-                        {
-                            id: "1",
-                            title: "Tech Conference 2025",
-                            description:
-                                "Annual technology conference featuring the latest in AI and web development.",
-                            date: "2025-10-15",
-                            location: "San Francisco, CA",
-                            price: 299,
-                            slug: "tech-conference-2025",
-                        },
-                        {
-                            id: "2",
-                            title: "Music Festival",
-                            description:
-                                "Three-day outdoor music festival with top artists.",
-                            date: "2025-08-20",
-                            location: "Austin, TX",
-                            price: 199,
-                            slug: "music-festival-2025",
-                        },
-                        {
-                            id: "3",
-                            title: "Food & Wine Expo",
-                            description:
-                                "Culinary experience with renowned chefs and wine tastings.",
-                            date: "2025-09-10",
-                            location: "New York, NY",
-                            price: 149,
-                            slug: "food-wine-expo",
-                        },
-                    ]);
-                    setLoading(false);
-                }, 1000);
+                // Fetch recent events from the API
+                const response = await eventAPI.getRecentEvents(6);
+
+                if (
+                    response.data && response.data.data &&
+                    response.data.data.events
+                ) {
+                    setEvents(response.data.data.events);
+                } else {
+                    setEvents([]);
+                }
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.error("Error fetching recent events:", error);
+                setEvents([]);
+            } finally {
                 setLoading(false);
             }
         }
-        fetchData();
+        fetchRecentEvents();
     }, []);
 
     const formatDate = (dateString: string) => {
@@ -179,7 +143,7 @@ export default function HomePage() {
                                         </div>
                                         <div className="mb-2">
                                             <span className="text-gray-500 text-sm">
-                                                {formatDate(event.date)}
+                                                {formatDate(event.start_time)}
                                             </span>
                                         </div>
                                         <h3 className="mb-2 font-semibold text-black group-hover:text-gray-700 text-xl transition-colors duration-200">
@@ -193,7 +157,8 @@ export default function HomePage() {
                                                 📍 {event.location}
                                             </span>
                                             <span className="font-semibold text-black text-lg">
-                                                ${event.price}
+                                                {event.available_seats} /{" "}
+                                                {event.total_seats} seats
                                             </span>
                                         </div>
                                         <Link
@@ -212,7 +177,7 @@ export default function HomePage() {
                             to="/events"
                             className="btn-secondary"
                         >
-                            View All Events
+                            Show More
                         </Link>
                     </div>
                 </div>

@@ -72,28 +72,34 @@ func NewEventHandler(cfg *config.Config) *EventHandler {
 }
 
 // RegisterRoutes registers all event-related routes with the provided router.
-// It creates a subrouter with the base path, applies authentication middleware,
-// and maps HTTP methods to handler functions.
+// It creates a subrouter with the base path and maps HTTP methods to handler functions.
 //
-// All event endpoints require authentication, enforced by the AuthGuard middleware.
-// The middleware expects a valid JWT token in either cookies or Authorization header.
+// Public endpoints (no authentication required):
+//   - GET /events/all - List all events with pagination
+//   - GET /events/recent - Get recent events (for home page)
+//
+// Protected endpoints (require admin authentication):
+//   - POST /events/create - Create a new event
+//   - PUT /events/update - Update an existing event
 //
 // Parameters:
 //   - router: The main router to attach event routes to
 func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Create a subrouter for all event routes
 	events := router.PathPrefix(h.BasePath).Subrouter()
-	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodGet) // Get all events with filtering
 
-	// Create the AuthGuard
+	// Public event endpoints (no authentication required)
+	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodGet)       // Get all events with filtering
+	events.HandleFunc("/recent", h.GetRecentEvents).Methods(http.MethodGet) // Get recent events - public for home page
+
+	// Create the AuthGuard for protected routes
 	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
 	protected := events.NewRoute().Subrouter()
-	protected.Use(guard.Guard) // Guard the whole route group
+	protected.Use(guard.Guard) // Guard the protected route group
 
-	// Register individual route handlers
-	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost)    // Create a new event
-	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)     // Update an existing event
-	protected.HandleFunc("/recent", h.GetRecentEvents).Methods(http.MethodGet) // Get recent events
+	// Register protected route handlers (admin only)
+	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
+	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an existing event
 }
 
 // CreateEvent handles requests to create a new event in the system.

@@ -5,20 +5,40 @@ import RegisterPage from "./pages/auth/register";
 import EventsPage from "./pages/events";
 import EventDetailPage from "./pages/event-detail";
 import DashboardPage from "./pages/dashboard";
+import AdminDashboardPage from "./pages/admin-dashboard";
 import AdminPage from "./pages/admin";
 import CreateEventPage from "./pages/create-event";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function AppRoutes() {
     return (
         <Routes>
+            {/* Public routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:slug" element={<EventDetailPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/auth/register" element={<RegisterPage />} />
+
+            {/* Admin routes - protected */}
             <Route path="/admin" element={<AdminPage />} />
-            <Route path="/create-event" element={<CreateEventPage />} />
+            <Route
+                path="/admin/dashboard"
+                element={
+                    <ProtectedRoute>
+                        <AdminDashboardPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/create-event"
+                element={
+                    <ProtectedRoute>
+                        <CreateEventPage />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Placeholder routes for other pages mentioned in navigation */}
             <Route
@@ -101,16 +121,7 @@ export default function AppRoutes() {
                     </div>
                 }
             />
-            <Route
-                path="/create-event"
-                element={
-                    <div className="p-8 text-center">
-                        <h1 className="font-bold text-2xl">
-                            Create Event - Coming Soon
-                        </h1>
-                    </div>
-                }
-            />
+
             <Route
                 path="/organizer"
                 element={

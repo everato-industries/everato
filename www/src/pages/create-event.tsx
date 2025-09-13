@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import Layout from "../components/layout";
 import api from "../lib/api";
-import { getAdminUser, isAuthenticated } from "../lib/auth";
+import { getAdminUser } from "../lib/auth";
 
 // Event creation form data types
 interface TicketType {
@@ -124,42 +124,33 @@ export default function CreateEventPage() {
         },
     });
 
-    // Check authentication status on component mount
+    // Initialize form data with admin user info on component mount
     useEffect(() => {
-        const checkAuth = async () => {
+        const initializeFormData = async () => {
             try {
-                if (!isAuthenticated()) {
-                    navigate("/admin");
-                    return;
-                }
-
                 const adminUser = getAdminUser();
-                if (!adminUser) {
-                    navigate("/admin");
-                    return;
+                if (adminUser) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        admin_id: adminUser.id,
+                        contact_email: adminUser.email,
+                        organizer_info: {
+                            ...prev.organizer_info,
+                            organizer_email: adminUser.email,
+                            organizer_name: adminUser.username || "",
+                        },
+                    }));
                 }
-
-                setFormData((prev) => ({
-                    ...prev,
-                    admin_id: adminUser.id,
-                    contact_email: adminUser.email,
-                    organizer_info: {
-                        ...prev.organizer_info,
-                        organizer_email: adminUser.email,
-                        organizer_name: adminUser.username || "",
-                    },
-                }));
                 setAuthenticated(true);
             } catch (error) {
-                console.error("Auth check failed:", error);
-                navigate("/admin");
+                console.error("Error initializing form data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        checkAuth();
-    }, [navigate]);
+        initializeFormData();
+    }, []);
 
     const updateField = (
         field: keyof EventFormData,
@@ -393,10 +384,11 @@ export default function CreateEventPage() {
                                     </label>
                                     <textarea
                                         value={formData.description}
-                                        onChange={(e) => updateField(
-                                            "description",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "description",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         rows={4}
                                         required
@@ -504,10 +496,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="datetime-local"
                                         value={formData.start_time}
-                                        onChange={(e) => updateField(
-                                            "start_time",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "start_time",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -537,10 +530,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="datetime-local"
                                         value={formData.booking_start_time}
-                                        onChange={(e) => updateField(
-                                            "booking_start_time",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "booking_start_time",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -552,10 +546,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="datetime-local"
                                         value={formData.booking_end_time}
-                                        onChange={(e) => updateField(
-                                            "booking_end_time",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "booking_end_time",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -576,10 +571,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => handleFileChange(
-                                            "banner_file",
-                                            e.target.files?.[0] || null,
-                                        )}
+                                        onChange={(e) =>
+                                            handleFileChange(
+                                                "banner_file",
+                                                e.target.files?.[0] || null,
+                                            )}
                                         className="w-full input-field"
                                     />
                                     <p className="mt-1 text-gray-500 text-sm">
@@ -594,10 +590,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => handleFileChange(
-                                            "icon_file",
-                                            e.target.files?.[0] || null,
-                                        )}
+                                        onChange={(e) =>
+                                            handleFileChange(
+                                                "icon_file",
+                                                e.target.files?.[0] || null,
+                                            )}
                                         className="w-full input-field"
                                     />
                                     <p className="mt-1 text-gray-500 text-sm">
@@ -612,10 +609,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="url"
                                         value={formData.banner_url || ""}
-                                        onChange={(e) => updateField(
-                                            "banner_url",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "banner_url",
+                                                e.target.value,
+                                            )}
                                         placeholder="https://example.com/banner.jpg"
                                         className="w-full input-field"
                                     />
@@ -655,11 +653,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.venue_details
                                             .venue_name}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "venue_name",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "venue_name",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -673,11 +672,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.venue_details
                                             .address_line1}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "address_line1",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "address_line1",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -691,11 +691,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.venue_details
                                             .address_line2 || ""}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "address_line2",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "address_line2",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -707,11 +708,12 @@ export default function CreateEventPage() {
                                     <input
                                         type="text"
                                         value={formData.venue_details.city}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "city",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "city",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -724,11 +726,12 @@ export default function CreateEventPage() {
                                     <input
                                         type="text"
                                         value={formData.venue_details.state}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "state",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "state",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -742,11 +745,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.venue_details
                                             .postal_code}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "postal_code",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "postal_code",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -759,11 +763,12 @@ export default function CreateEventPage() {
                                     <input
                                         type="text"
                                         value={formData.venue_details.country}
-                                        onChange={(e) => updateNestedField(
-                                            "venue_details",
-                                            "country",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "venue_details",
+                                                "country",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -802,10 +807,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="number"
                                         value={formData.total_seats}
-                                        onChange={(e) => updateField(
-                                            "total_seats",
-                                            parseInt(e.target.value),
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "total_seats",
+                                                parseInt(e.target.value),
+                                            )}
                                         className="w-full input-field"
                                         min="1"
                                         required
@@ -819,10 +825,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="number"
                                         value={formData.available_seats}
-                                        onChange={(e) => updateField(
-                                            "available_seats",
-                                            parseInt(e.target.value),
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "available_seats",
+                                                parseInt(e.target.value),
+                                            )}
                                         className="w-full input-field"
                                         min="1"
                                         required
@@ -836,10 +843,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="number"
                                         value={formData.max_tickets_per_user}
-                                        onChange={(e) => updateField(
-                                            "max_tickets_per_user",
-                                            parseInt(e.target.value),
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "max_tickets_per_user",
+                                                parseInt(e.target.value),
+                                            )}
                                         className="w-full input-field"
                                         min="1"
                                     />
@@ -1030,11 +1038,12 @@ export default function CreateEventPage() {
                                             <input
                                                 type="datetime-local"
                                                 value={coupon.valid_from}
-                                                onChange={(e) => updateCoupon(
-                                                    index,
-                                                    "valid_from",
-                                                    e.target.value,
-                                                )}
+                                                onChange={(e) =>
+                                                    updateCoupon(
+                                                        index,
+                                                        "valid_from",
+                                                        e.target.value,
+                                                    )}
                                                 className="w-full input-field"
                                                 required
                                             />
@@ -1046,11 +1055,12 @@ export default function CreateEventPage() {
                                             <input
                                                 type="datetime-local"
                                                 value={coupon.valid_until}
-                                                onChange={(e) => updateCoupon(
-                                                    index,
-                                                    "valid_until",
-                                                    e.target.value,
-                                                )}
+                                                onChange={(e) =>
+                                                    updateCoupon(
+                                                        index,
+                                                        "valid_until",
+                                                        e.target.value,
+                                                    )}
                                                 className="w-full input-field"
                                                 required
                                             />
@@ -1063,11 +1073,14 @@ export default function CreateEventPage() {
                                                 type="number"
                                                 placeholder="100"
                                                 value={coupon.usage_limit}
-                                                onChange={(e) => updateCoupon(
-                                                    index,
-                                                    "usage_limit",
-                                                    parseInt(e.target.value),
-                                                )}
+                                                onChange={(e) =>
+                                                    updateCoupon(
+                                                        index,
+                                                        "usage_limit",
+                                                        parseInt(
+                                                            e.target.value,
+                                                        ),
+                                                    )}
                                                 className="w-full input-field"
                                                 min="1"
                                                 required
@@ -1093,11 +1106,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.organizer_info
                                             .organizer_name}
-                                        onChange={(e) => updateNestedField(
-                                            "organizer_info",
-                                            "organizer_name",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "organizer_info",
+                                                "organizer_name",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -1111,11 +1125,12 @@ export default function CreateEventPage() {
                                         type="text"
                                         value={formData.organizer_info
                                             .organization}
-                                        onChange={(e) => updateNestedField(
-                                            "organizer_info",
-                                            "organization",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "organizer_info",
+                                                "organization",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -1128,11 +1143,12 @@ export default function CreateEventPage() {
                                         type="email"
                                         value={formData.organizer_info
                                             .organizer_email}
-                                        onChange={(e) => updateNestedField(
-                                            "organizer_info",
-                                            "organizer_email",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "organizer_info",
+                                                "organizer_email",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         required
                                     />
@@ -1146,11 +1162,12 @@ export default function CreateEventPage() {
                                         type="tel"
                                         value={formData.organizer_info
                                             .organizer_phone}
-                                        onChange={(e) => updateNestedField(
-                                            "organizer_info",
-                                            "organizer_phone",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "organizer_info",
+                                                "organizer_phone",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -1171,10 +1188,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="email"
                                         value={formData.contact_email}
-                                        onChange={(e) => updateField(
-                                            "contact_email",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "contact_email",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -1186,10 +1204,11 @@ export default function CreateEventPage() {
                                     <input
                                         type="tel"
                                         value={formData.contact_phone}
-                                        onChange={(e) => updateField(
-                                            "contact_phone",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "contact_phone",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                     />
                                 </div>
@@ -1202,11 +1221,12 @@ export default function CreateEventPage() {
                                         type="url"
                                         value={formData.social_links.website ||
                                             ""}
-                                        onChange={(e) => updateNestedField(
-                                            "social_links",
-                                            "website",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "social_links",
+                                                "website",
+                                                e.target.value,
+                                            )}
                                         placeholder="https://example.com"
                                         className="w-full input-field"
                                     />
@@ -1220,11 +1240,12 @@ export default function CreateEventPage() {
                                         type="url"
                                         value={formData.social_links.facebook ||
                                             ""}
-                                        onChange={(e) => updateNestedField(
-                                            "social_links",
-                                            "facebook",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "social_links",
+                                                "facebook",
+                                                e.target.value,
+                                            )}
                                         placeholder="https://facebook.com/page"
                                         className="w-full input-field"
                                     />
@@ -1238,11 +1259,12 @@ export default function CreateEventPage() {
                                         type="url"
                                         value={formData.social_links.twitter ||
                                             ""}
-                                        onChange={(e) => updateNestedField(
-                                            "social_links",
-                                            "twitter",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "social_links",
+                                                "twitter",
+                                                e.target.value,
+                                            )}
                                         placeholder="https://twitter.com/handle"
                                         className="w-full input-field"
                                     />
@@ -1256,11 +1278,12 @@ export default function CreateEventPage() {
                                         type="url"
                                         value={formData.social_links.linkedin ||
                                             ""}
-                                        onChange={(e) => updateNestedField(
-                                            "social_links",
-                                            "linkedin",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateNestedField(
+                                                "social_links",
+                                                "linkedin",
+                                                e.target.value,
+                                            )}
                                         placeholder="https://linkedin.com/company/name"
                                         className="w-full input-field"
                                     />
@@ -1281,10 +1304,11 @@ export default function CreateEventPage() {
                                     </label>
                                     <textarea
                                         value={formData.refund_policy}
-                                        onChange={(e) => updateField(
-                                            "refund_policy",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "refund_policy",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         rows={3}
                                         placeholder="Describe your refund policy..."
@@ -1297,10 +1321,11 @@ export default function CreateEventPage() {
                                     </label>
                                     <textarea
                                         value={formData.terms_and_conditions}
-                                        onChange={(e) => updateField(
-                                            "terms_and_conditions",
-                                            e.target.value,
-                                        )}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "terms_and_conditions",
+                                                e.target.value,
+                                            )}
                                         className="w-full input-field"
                                         rows={4}
                                         placeholder="Enter terms and conditions..."

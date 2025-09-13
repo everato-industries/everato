@@ -192,7 +192,7 @@ function EventCreationForm(
             <div className="mb-4">
                 <button
                     type="button"
-                    onClick={() => window.open("/create-event", "_blank")}
+                    onClick={() => window.open("/www/create-event", "_blank")}
                     className="w-full text-sm text-center btn-secondary"
                 >
                     🚀 Open in New Page (Full Form)
