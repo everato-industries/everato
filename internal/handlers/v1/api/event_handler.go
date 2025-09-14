@@ -91,6 +91,7 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	// Public event endpoints (no authentication required)
 	events.HandleFunc("/all", h.GetAllEvents).Methods(http.MethodGet)       // Get all events with filtering
 	events.HandleFunc("/recent", h.GetRecentEvents).Methods(http.MethodGet) // Get recent events - public for home page
+	events.HandleFunc("/{slug}", h.GetBySlug).Methods(http.MethodGet)       // Get events by slug - public for home page
 
 	// Create the AuthGuard for protected routes
 	guard := middlewares.NewAdminMiddleware(h.Repo, h.Conn, false)
@@ -213,4 +214,36 @@ func (h *EventHandler) GetRecentEvents(w http.ResponseWriter, r *http.Request) {
 
 	// Delegate to the service layer
 	event.GetRecentEvents(wr, h.Repo, h.Conn)
+}
+
+// GetBySlug handles requests to retrieve a specific event by its slug.
+// It validates the request and delegates the retrieval logic to the event service.
+//
+// HTTP Method: GET
+// Route: /api/v1/events/{slug}
+//
+// Path Parameters:
+//   - slug: The unique slug identifier for the event
+//
+// Response:
+//   - 200 OK with event details on success
+//   - 400 Bad Request if slug parameter is missing or invalid
+//   - 401 Unauthorized if user is not authenticated
+//   - 404 Not Found if no event matches the provided slug
+//   - 500 Internal Server Error if database operation fails
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	event.GetEventBySlug(wr, h.Repo, h.Conn)
 }

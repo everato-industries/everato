@@ -1,46 +1,65 @@
 {
-    "title": "Tech Conference 2025",
-    "description": "A comprehensive technology conference featuring the latest innovations in AI, web development, and cloud computing. Join industry experts for two days of learning.",
-    "start_time": "2025-12-15T09:00:00Z",
-    "end_time": "2025-12-16T18:00:00Z",
-    "location": "San Francisco Convention Center",
+    "title": "GDG On Campus TIU Orientation 2025",
+    "description": "Join industry leaders for a comprehensive exploration of AI technologies, machine learning innovations, and the future of digital transformation. This event features keynote speakers, interactive workshops, and networking opportunities.",
+    "start_time": "2025-09-15T04:30:00.000Z",
+    "end_time": "2025-09-15T11:30:00.000Z",
+    "location": "EM-4, Sector-V, Salt Lake, Kolkata, WB, India",
     "admin_id": "3259cbaf-6abe-45fc-b54c-9158d27c031c",
-    "banner_url": "https://example.com/tech-conf-banner.jpg",
-    "icon_url": "https://example.com/tech-conf-icon.png",
-    "total_seats": 500,
-    "available_seats": 500,
+    "total_seats": 300,
+    "available_seats": 250,
     "status": "CREATED",
     "ticket_types": [
         {
-            "name": "General Admission",
-            "price": 199.99,
-            "available_tickets": 300
+            "name": "Student",
+            "price": 0,
+            "available_tickets": 200
         },
         {
-            "name": "VIP Access",
-            "price": 399.99,
+            "name": "Sponsor",
+            "price": 0,
             "available_tickets": 50
-        },
-        {
-            "name": "Student Discount",
-            "price": 99.99,
-            "available_tickets": 150
         }
     ],
     "coupons": [
         {
-            "code": "EARLY20",
-            "discount_percentage": 20.0,
-            "valid_from": "2025-10-01T00:00:00Z",
-            "valid_until": "2025-11-30T23:59:59Z",
-            "usage_limit": 100
-        },
-        {
-            "code": "STUDENT",
-            "discount_percentage": 15.0,
-            "valid_from": "2025-10-01T00:00:00Z",
-            "valid_until": "2025-12-14T23:59:59Z",
-            "usage_limit": 200
+            "code": "EARLY2025",
+            "discount_percentage": 10,
+            "valid_from": "2025-09-14T17:00",
+            "valid_until": "2025-09-14T19:00",
+            "usage_limit": 50
         }
-    ]
+    ],
+    "event_type": "SEMINAR",
+    "category": "EDUCATION",
+    "tags": [
+        "AI",
+        "Machine Learning",
+        "Blockchain",
+        "Go",
+        "Rust",
+        "Web Development"
+    ],
+    "max_tickets_per_user": 5,
+    "booking_start_time": "2025-09-14T07:30:00.000Z",
+    "booking_end_time": "2025-09-14T17:30:00.000Z",
+    "refund_policy": "- No refunds will be done after the registration period is closed\n- Refunds will be done at the venue only",
+    "terms_and_conditions": "- Don't be late\n- Bring your refreshments\n- Bring your laptop and all of the accessories",
+    "contact_email": "admin@everato.org",
+    "contact_phone": "8910530975",
+    "organizer_name": "Piush Bose",
+    "organizer_email": "dev.bosepiush@gmail.com",
+    "organizer_phone": "8910530975",
+    "organization": "GDG On Campus TIU",
+    "website_url": "https://portfolio-piush.vercel.app/",
+    "facebook_url": "https://www.facebook.com/PiushBose/",
+    "twitter_url": "https://x.com/piushthedev",
+    "linkedin_url": "https://www.linkedin.com/in/bosepiush/",
+    "venue_name": "Techno India University - Conference Hall",
+    "address_line1": "EM-4 Block, EM2 Bypass, Sector V, Salt Lake",
+    "city": "Kolkata",
+    "state": "West Bengal",
+    "postal_code": "700002",
+    "country": "India",
+    "banner_url": "https://example.com",
+    "icon_url": "https://example.com"
 }

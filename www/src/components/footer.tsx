@@ -13,9 +13,9 @@ export default function Footer() {
   };
 
   return (
-    <footer className="flex flex-col bg-white border-gray-200 border-t">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
-        <div className="gap-8 grid grid-cols-1 md:grid-cols-4">
+    <footer className="bg-white border-gray-200 border-t w-full">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full max-w-7xl">
+        <div className="gap-8 grid grid-cols-1 md:grid-cols-2">
           {/* Brand Section */}
           <div className="col-span-1">
             <Link to="/" className="font-bold text-black text-2xl">
@@ -27,7 +27,7 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="flex-1 col-span-1">
+          <div className="col-span-1 text-start md:text-end">
             <h3 className="font-semibold text-black text-sm uppercase tracking-wider">
               Events
             </h3>

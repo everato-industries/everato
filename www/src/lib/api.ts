@@ -18,6 +18,7 @@ export interface Event {
     created_at: string;
     updated_at: string;
     admin_id?: string;
+    tags: string[];
 }
 
 // Create axios instance with default configuration

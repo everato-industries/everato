@@ -7,10 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dtg-lucifer/everato/internal/db/repository"
-	"github.com/dtg-lucifer/everato/internal/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/dtg-lucifer/everato/internal/db/repository"
+	"github.com/dtg-lucifer/everato/internal/utils"
 )
 
 // Location constants define the valid location types for events
@@ -32,7 +33,7 @@ func stringToPgText(s string) pgtype.Text {
 // TicketTypeDTO represents the data for creating a ticket type
 type TicketTypeDTO struct {
 	Name             string  `json:"name" validate:"required,min=2,max=100"`                // Ticket type name (e.g., "VIP", "General", "Student")
-	Price            float64 `json:"price" validate:"required,min=0,max=100000"`            // Ticket price
+	Price            float64 `json:"price" validate:"min=0,max=100000"`                     // Ticket price (0 = free tickets allowed)
 	AvailableTickets int     `json:"available_tickets" validate:"required,min=1,max=10000"` // Number of tickets available for this type
 }
 
@@ -80,14 +81,14 @@ type CreateEventDTO struct {
 	ContactPhone string `json:"contact_phone" validate:"omitempty,max=50"`        // Contact phone for event inquiries
 
 	// Event Details
-	EventType          string `json:"event_type" validate:"omitempty,oneof=CONFERENCE WORKSHOP SEMINAR MEETUP FESTIVAL CONCERT EXHIBITION OTHER"`          // Type of event
-	Category           string `json:"category" validate:"omitempty,oneof=TECHNOLOGY BUSINESS EDUCATION HEALTH ARTS SPORTS ENTERTAINMENT NETWORKING OTHER"` // Event category
-	MaxTicketsPerUser  int    `json:"max_tickets_per_user" validate:"omitempty,min=1,max=100"`                                                             // Maximum tickets per user
-	BookingStartTime   string `json:"booking_start_time" validate:"omitempty,datetime"`                                                                    // When booking opens
-	BookingEndTime     string `json:"booking_end_time" validate:"omitempty,datetime"`                                                                      // When booking closes
-	RefundPolicy       string `json:"refund_policy" validate:"omitempty,max=2000"`                                                                         // Event refund policy
-	TermsAndConditions string `json:"terms_and_conditions" validate:"omitempty,max=5000"`                                                                  // Event terms and conditions
-	Tags               string `json:"tags" validate:"omitempty,max=500"`                                                                                   // Comma-separated tags
+	EventType          string   `json:"event_type" validate:"omitempty,oneof=CONFERENCE WORKSHOP SEMINAR MEETUP FESTIVAL CONCERT EXHIBITION OTHER"`          // Type of event
+	Category           string   `json:"category" validate:"omitempty,oneof=TECHNOLOGY BUSINESS EDUCATION HEALTH ARTS SPORTS ENTERTAINMENT NETWORKING OTHER"` // Event category
+	MaxTicketsPerUser  int      `json:"max_tickets_per_user" validate:"omitempty,min=1,max=100"`                                                             // Maximum tickets per user
+	BookingStartTime   string   `json:"booking_start_time" validate:"omitempty,datetime"`                                                                    // When booking opens
+	BookingEndTime     string   `json:"booking_end_time" validate:"omitempty,datetime"`                                                                      // When booking closes
+	RefundPolicy       string   `json:"refund_policy" validate:"omitempty,max=2000"`                                                                         // Event refund policy
+	TermsAndConditions string   `json:"terms_and_conditions" validate:"omitempty,max=5000"`                                                                  // Event terms and conditions
+	Tags               []string `json:"tags" validate:"omitempty,max=20,dive,min=1,max=50"`                                                                  // Array of tags (max 20 tags, each 1-50 chars)
 
 	// Social Links
 	WebsiteURL   string `json:"website_url" validate:"omitempty,url,max=500"`   // Event website URL
@@ -115,16 +116,58 @@ type CreateEventDTO struct {
 }
 
 // time_parser is a custom validator function for validating datetime strings.
-// It ensures that date/time fields conform to RFC3339/ISO8601 format.
+// It ensures that date/time fields conform to RFC3339/ISO8601 format or common variations.
 //
 // Parameters:
 //   - fl: The validator's field level with access to the field being validated
 //
 // Returns:
-//   - true if the string can be parsed as a valid RFC3339 timestamp, false otherwise
+//   - true if the string can be parsed as a valid timestamp, false otherwise
 func time_parser(fl validator.FieldLevel) bool {
-	_, err := time.Parse(time.RFC3339, fl.Field().String())
-	return err == nil
+	timeStr := fl.Field().String()
+
+	// Try multiple datetime formats commonly used
+	formats := []string{
+		time.RFC3339,               // "2006-01-02T15:04:05Z07:00"
+		time.RFC3339Nano,           // "2006-01-02T15:04:05.999999999Z07:00"
+		"2006-01-02T15:04:05Z",     // "2025-09-14T17:00:00Z"
+		"2006-01-02T15:04:05.000Z", // "2025-09-14T17:00:00.000Z"
+		"2006-01-02T15:04Z",        // "2025-09-14T17:00Z" (missing seconds)
+		"2006-01-02T15:04",         // "2025-09-14T17:00" (missing seconds and timezone)
+	}
+
+	for _, format := range formats {
+		if _, err := time.Parse(format, timeStr); err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ParseFlexibleTime parses datetime strings in various common formats
+func ParseFlexibleTime(timeStr string) (time.Time, error) {
+	if timeStr == "" {
+		return time.Time{}, fmt.Errorf("empty time string")
+	}
+
+	// Try multiple datetime formats commonly used
+	formats := []string{
+		time.RFC3339,               // "2006-01-02T15:04:05Z07:00"
+		time.RFC3339Nano,           // "2006-01-02T15:04:05.999999999Z07:00"
+		"2006-01-02T15:04:05Z",     // "2025-09-14T17:00:00Z"
+		"2006-01-02T15:04:05.000Z", // "2025-09-14T17:00:00.000Z"
+		"2006-01-02T15:04Z",        // "2025-09-14T17:00Z" (missing seconds)
+		"2006-01-02T15:04",         // "2025-09-14T17:00" (missing seconds and timezone)
+	}
+
+	for _, format := range formats {
+		if parsedTime, err := time.Parse(format, timeStr); err == nil {
+			return parsedTime, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unable to parse time string: %s", timeStr)
 }
 
 // uuid_parser is a custom validator function for validating UUID strings.
@@ -160,23 +203,23 @@ func (c *CreateEventDTO) Validate() error {
 	_ = v.RegisterValidation("datetime", time_parser) // Register custom datetime validator
 	_ = v.RegisterValidation("uuid", uuid_parser)     // Register custom UUID validator
 
-	// Validate main event datetime fields
-	st, err := time.Parse(time.RFC3339, c.StartTime)
+	// Validate main event datetime fields with flexible parsing
+	st, err := ParseFlexibleTime(c.StartTime)
 	if err != nil {
 		return fmt.Errorf("invalid start_time format: %w", err)
 	}
-	et, err := time.Parse(time.RFC3339, c.EndTime)
+	et, err := ParseFlexibleTime(c.EndTime)
 	if err != nil {
 		return fmt.Errorf("invalid end_time format: %w", err)
 	}
 
-	// Validate coupon datetime fields
+	// Validate coupon datetime fields with flexible parsing
 	for i, coupon := range c.Coupons {
-		validFrom, err := time.Parse(time.RFC3339, coupon.ValidFrom)
+		validFrom, err := ParseFlexibleTime(coupon.ValidFrom)
 		if err != nil {
 			return fmt.Errorf("invalid valid_from format in coupon %d: %w", i, err)
 		}
-		validUntil, err := time.Parse(time.RFC3339, coupon.ValidUntil)
+		validUntil, err := ParseFlexibleTime(coupon.ValidUntil)
 		if err != nil {
 			return fmt.Errorf("invalid valid_until format in coupon %d: %w", i, err)
 		}
@@ -196,9 +239,9 @@ func (c *CreateEventDTO) Validate() error {
 		return fmt.Errorf("total ticket capacity (%d) exceeds event total seats (%d)", totalTicketCapacity, c.TotalSeats)
 	}
 
-	// Validate booking datetime fields if provided
+	// Validate booking datetime fields if provided with flexible parsing
 	if c.BookingStartTime != "" {
-		bst, err := time.Parse(time.RFC3339, c.BookingStartTime)
+		bst, err := ParseFlexibleTime(c.BookingStartTime)
 		if err != nil {
 			return fmt.Errorf("invalid booking_start_time format: %w", err)
 		}
@@ -206,7 +249,7 @@ func (c *CreateEventDTO) Validate() error {
 	}
 
 	if c.BookingEndTime != "" {
-		bet, err := time.Parse(time.RFC3339, c.BookingEndTime)
+		bet, err := ParseFlexibleTime(c.BookingEndTime)
 		if err != nil {
 			return fmt.Errorf("invalid booking_end_time format: %w", err)
 		}
@@ -239,14 +282,14 @@ func (c *CreateEventDTO) Validate() error {
 // Returns:
 //   - A repository.CreateEventParams struct ready for database insertion
 func (c CreateEventDTO) ToCreateEventParams(slug string) (repository.CreateEventParams, error) {
-	// Parse start time
-	startTime, err := time.Parse(time.RFC3339, c.StartTime)
+	// Parse start time with flexible format support
+	startTime, err := ParseFlexibleTime(c.StartTime)
 	if err != nil {
 		return repository.CreateEventParams{}, fmt.Errorf("invalid start_time format: %w", err)
 	}
 
-	// Parse end time
-	endTime, err := time.Parse(time.RFC3339, c.EndTime)
+	// Parse end time with flexible format support
+	endTime, err := ParseFlexibleTime(c.EndTime)
 	if err != nil {
 		return repository.CreateEventParams{}, fmt.Errorf("invalid end_time format: %w", err)
 	}
@@ -280,11 +323,11 @@ func (c CreateEventDTO) ToCreateEventParams(slug string) (repository.CreateEvent
 		bookingEndTime = pgtype.Timestamptz{Time: c.TIME_BookingEnd, InfinityModifier: pgtype.Finite, Valid: true}
 	}
 
-	// Convert tags string to array
+	// Process tags array - trim whitespace from each tag
 	var tagsArray []string
-	if c.Tags != "" {
-		tagsArray = strings.Split(c.Tags, ",")
-		for i, tag := range tagsArray {
+	if len(c.Tags) > 0 {
+		tagsArray = make([]string, len(c.Tags))
+		for i, tag := range c.Tags {
 			tagsArray[i] = strings.TrimSpace(tag)
 		}
 	}

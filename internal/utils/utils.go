@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -216,4 +218,24 @@ func BcryptHash(s string) (string, error) {
 	}
 
 	return string(hashedPassword), nil
+}
+
+// GetParam retrieves a URL parameter from the request using Gorilla Mux.
+// It returns the value of the parameter if it exists, or an empty string if not found.
+//
+// Parameters:
+//   - r: The HTTP request containing the URL parameters
+//   - key: The name of the parameter to retrieve
+//
+// Returns:
+//   - The value of the URL parameter, or an empty string if not found
+func GetParam(r *http.Request, key string) string {
+	vars := mux.Vars(r)
+
+	v, ok := vars[key]
+
+	if !ok {
+		return ""
+	}
+	return v
 }

@@ -56,6 +56,9 @@ func (h *DashboardHandler) RegisterRoutes(router *mux.Router) {
 	// GET /dashboard/stats
 	r.HandleFunc("/stats", h.Stats).Methods(http.MethodGet)
 
+	// GET /dashboard/info
+	r.HandleFunc("/info", h.Info).Methods(http.MethodGet)
+
 	// GET /dashboard/recent-events?limit={number}
 	r.HandleFunc("/recent-events", h.Recent).Methods(http.MethodGet)
 }
@@ -142,4 +145,18 @@ func (h *DashboardHandler) Recent(w http.ResponseWriter, r *http.Request) {
 
 	// Delegate to event service
 	event.GetRecentEvents(wr, h.Repo, h.Conn)
+}
+
+func (h *DashboardHandler) Info(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+	logger := pkg.NewLogger()
+	defer logger.Close()
+
+	info := utils.M{
+		"org_name": h.Config.Name,
+		"version":  h.Config.Version,
+		"api":      h.Config.ApiPrefix,
+	}
+
+	wr.Status(http.StatusOK).Json(info)
 }

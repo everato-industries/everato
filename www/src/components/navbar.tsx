@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import api from "../lib/api";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [serverInfo, setServerInfo] = useState<Record<string, string> | null>(
+    null,
+  );
   const location = useLocation();
 
   const navLinks = [
@@ -10,13 +14,28 @@ export default function Navbar() {
     { href: "/events", label: "Events" },
   ];
 
+  useEffect(() => {
+    api.get("/dashboard/info")
+      .then((response) => {
+        setServerInfo(response.data);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch server info:", error);
+      });
+  }, []);
+
   return (
     <nav className="top-0 z-40 sticky bg-white border-gray-200 border-b">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="font-bold text-black text-2xl">
-            Everato
+          <Link to="/" className="h-[3rem] font-bold text-black text-2xl">
+            <div className="flex items-center space-x-2 h-[3rem]">
+              <span>{serverInfo ? serverInfo.org_name : "Everato"}</span>
+              <span className="self-end font-thin text-gray-400 text-sm italic">
+                {serverInfo ? "~ Powered by, Everato" : ""}
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

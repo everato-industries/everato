@@ -1,29 +1,52 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Layout from "../components/layout";
+import api from "../lib/api";
 
 interface Event {
     id: string;
     title: string;
     description: string;
-    date: string;
-    time: string;
-    endDate?: string;
-    endTime?: string;
+    banner?: string;
+    icon?: string;
+    admin_id: string;
+    start_time: string;
+    end_time: string;
     location: string;
-    venue: string;
-    price: number;
-    image?: string;
+    total_seats: number;
+    available_seats: number;
+    created_at: string;
+    updated_at: string;
     slug: string;
+    status: string;
+    organizer_name?: string;
+    organizer_email?: string;
+    organizer_phone?: string;
+    organization?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    refund_policy?: string;
+    terms_and_conditions?: string;
+    event_type: string;
     category: string;
-    organizer: {
-        name: string;
-        email: string;
-        avatar?: string;
-    };
-    capacity: number;
-    availableTickets: number;
+    max_tickets_per_user: number;
+    booking_start_time?: string;
+    booking_end_time?: string;
     tags: string[];
+    website_url?: string;
+    facebook_url?: string;
+    twitter_url?: string;
+    instagram_url?: string;
+    linkedin_url?: string;
+    venue_name?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 interface TicketSelection {
@@ -45,76 +68,58 @@ export default function EventDetailPage() {
         const fetchEvent = async () => {
             try {
                 setLoading(true);
-                // Mock API call - replace with actual API
-                setTimeout(() => {
-                    // Mock event data based on slug
-                    const mockEvent: Event = {
-                        id: "1",
-                        title: slug === "tech-conference-2025"
-                            ? "Tech Conference 2025"
-                            : "Sample Event",
-                        description:
-                            "Join us for an incredible experience that you'll never forget. This event brings together amazing people, great content, and unforgettable moments. Whether you're here to learn, network, or simply enjoy yourself, we've created something special just for you.",
-                        date: "2025-10-15",
-                        time: "09:00",
-                        endDate: "2025-10-17",
-                        endTime: "18:00",
-                        location: "San Francisco, CA",
-                        venue:
-                            "Moscone Center, 747 Howard St, San Francisco, CA 94103",
-                        price: 299,
-                        slug: slug || "",
-                        category: "Technology",
-                        organizer: {
-                            name: "Tech Events Inc",
-                            email: "contact@techevents.com",
-                        },
-                        capacity: 1000,
-                        availableTickets: 850,
-                        tags: [
-                            "Technology",
-                            "AI",
-                            "Web Development",
-                            "Networking",
-                        ],
-                    };
+                const response = await api.get(`/events/${slug}`);
 
-                    setEvent(mockEvent);
-                    setTicketSelection({
-                        quantity: 1,
-                        totalPrice: mockEvent.price,
-                    });
-                    setLoading(false);
-                }, 500);
+                // Handle the API response structure
+                if (response.data && response.data.event) {
+                    setEvent(response.data.event);
+                } else {
+                    console.log("No event found in response");
+                    setEvent(null);
+                }
+                setLoading(false);
             } catch (error) {
                 console.error("Error fetching event:", error);
+                setEvent(null);
                 setLoading(false);
             }
         };
 
-        fetchEvent();
+        if (slug) {
+            fetchEvent();
+        }
     }, [slug]);
 
     const handleQuantityChange = (newQuantity: number) => {
         if (
             event && newQuantity >= 1 &&
-            newQuantity <= Math.min(10, event.availableTickets)
+            newQuantity <=
+                Math.min(
+                    event.max_tickets_per_user || 10,
+                    event.available_seats,
+                )
         ) {
+            // Since there's no price in the API response, we'll set it to 0 for now
+            // You may need to add a price field to your API or handle pricing differently
             setTicketSelection({
                 quantity: newQuantity,
-                totalPrice: newQuantity * event.price,
+                totalPrice: newQuantity * 0, // No price field in API
             });
         }
     };
 
-    const formatDate = (date: string, time?: string) => {
-        const eventDate = new Date(`${date}T${time || "00:00"}`);
+    const formatDate = (dateTime: string) => {
+        const eventDate = new Date(dateTime);
+        if (isNaN(eventDate.getTime())) {
+            return "Invalid Date";
+        }
         return eventDate.toLocaleDateString("en-US", {
             weekday: "long",
             year: "numeric",
             month: "long",
             day: "numeric",
-            ...(time && { hour: "numeric", minute: "2-digit" }),
+            hour: "numeric",
+            minute: "2-digit",
         });
     };
 
@@ -178,10 +183,12 @@ export default function EventDetailPage() {
                     {/* Main Content */}
                     <div className="lg:col-span-2">
                         {/* Hero Image */}
-                        <div className="flex justify-center items-center bg-gray-100 mb-8 h-96">
-                            <span className="text-gray-400 text-xl">
-                                Event Image
-                            </span>
+                        <div className="flex justify-center items-center bg-gray-100 mb-8 max-h-96 overflow-hidden">
+                            <img
+                                src={event.banner}
+                                alt="banner"
+                                className="w-full h-full object-cover aspect-video"
+                            />
                         </div>
 
                         {/* Event Info */}
@@ -213,15 +220,14 @@ export default function EventDetailPage() {
                                         📅 Date & Time
                                     </h3>
                                     <p className="text-gray-600">
-                                        {formatDate(event.date, event.time)}
-                                        {event.endDate && (
-                                            <span>
-                                                - {formatDate(
-                                                    event.endDate,
-                                                    event.endTime,
-                                                )}
-                                            </span>
-                                        )}
+                                        <span>
+                                            From -{" "}
+                                            {formatDate(event.start_time)}
+                                        </span>
+                                        <br />
+                                        <span>
+                                            To - {formatDate(event.end_time)}
+                                        </span>
                                     </p>
                                 </div>
                                 <div>
@@ -229,30 +235,47 @@ export default function EventDetailPage() {
                                         📍 Location
                                     </h3>
                                     <p className="text-gray-600">
-                                        {event.venue}
+                                        {event.venue_name || event.location}
                                     </p>
-                                    <p className="text-gray-500 text-sm">
-                                        {event.location}
-                                    </p>
+                                    {event.venue_name && event.location && (
+                                        <p className="text-gray-500 text-sm">
+                                            {event.location}
+                                        </p>
+                                    )}
+                                    {event.city && event.state && (
+                                        <p className="text-gray-500 text-sm">
+                                            {event.city}, {event.state}{" "}
+                                            {event.country}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <h3 className="mb-2 font-semibold text-black">
                                         👤 Organizer
                                     </h3>
                                     <p className="text-gray-600">
-                                        {event.organizer.name}
+                                        {event.organization + " ~ " +
+                                            event.organizer_name}
                                     </p>
-                                    <p className="text-gray-500 text-sm">
-                                        {event.organizer.email}
-                                    </p>
+                                    {event.organizer_email && (
+                                        <p className="text-gray-500 text-sm">
+                                            {event.organizer_email}
+                                        </p>
+                                    )}
+                                    {event.contact_email &&
+                                        !event.organizer_email && (
+                                        <p className="text-gray-500 text-sm">
+                                            {event.contact_email}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <h3 className="mb-2 font-semibold text-black">
                                         🎫 Availability
                                     </h3>
                                     <p className="text-gray-600">
-                                        {event.availableTickets} of{" "}
-                                        {event.capacity} tickets remaining
+                                        {event.available_seats} of{" "}
+                                        {event.total_seats} tickets remaining
                                     </p>
                                 </div>
                             </div>
@@ -265,20 +288,12 @@ export default function EventDetailPage() {
                                     <p className="text-gray-600 leading-relaxed">
                                         {event.description}
                                     </p>
-                                    <p className="mt-4 text-gray-600 leading-relaxed">
-                                        This is a fantastic opportunity to
-                                        connect with like-minded individuals,
-                                        learn from industry experts, and
-                                        discover new perspectives. We've
-                                        carefully curated an experience that
-                                        combines valuable content with
-                                        meaningful networking opportunities.
-                                    </p>
-                                    <p className="mt-4 text-gray-600 leading-relaxed">
-                                        Don't miss out on this unique event.
-                                        Spaces are limited and filling up fast.
-                                        Secure your spot today and be part of
-                                        something extraordinary.
+                                    <p className="mt-4 font-thin text-gray-400 text-sm italic leading-relaxed">
+                                        If you have any questions, feel free to
+                                        contact the organizer at{" "}
+                                        {event.organizer_email ||
+                                            event.contact_email ||
+                                            "N/A"}.
                                     </p>
                                 </div>
                             </div>
@@ -291,7 +306,7 @@ export default function EventDetailPage() {
                             <div className="card">
                                 <div className="mb-6 text-center">
                                     <div className="mb-2 font-bold text-black text-3xl">
-                                        ${event.price}
+                                        Free
                                     </div>
                                     <div className="text-gray-600">
                                         per ticket
@@ -329,8 +344,10 @@ export default function EventDetailPage() {
                                                 disabled={ticketSelection
                                                     .quantity >=
                                                     Math.min(
-                                                        10,
-                                                        event.availableTickets,
+                                                        event
+                                                            .max_tickets_per_user ||
+                                                            10,
+                                                        event.available_seats,
                                                     )}
                                             >
                                                 +
@@ -356,9 +373,9 @@ export default function EventDetailPage() {
                                 <button
                                     onClick={() => setShowBookingModal(true)}
                                     className="mb-4 w-full btn-primary"
-                                    disabled={event.availableTickets === 0}
+                                    disabled={event.available_seats === 0}
                                 >
-                                    {event.availableTickets === 0
+                                    {event.available_seats === 0
                                         ? "Sold Out"
                                         : "Book Now"}
                                 </button>
@@ -411,20 +428,22 @@ export default function EventDetailPage() {
                                 {event.title}
                             </h3>
                             <p className="mb-2 text-gray-600">
-                                {formatDate(event.date, event.time)}
+                                {formatDate(event.start_time)}
                             </p>
-                            <p className="mb-4 text-gray-600">{event.venue}</p>
+                            <p className="mb-4 text-gray-600">
+                                {event.venue_name || event.location}
+                            </p>
 
                             <div className="bg-gray-50 p-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <span>
                                         Tickets × {ticketSelection.quantity}
                                     </span>
-                                    <span>${ticketSelection.totalPrice}</span>
+                                    <span>Free</span>
                                 </div>
                                 <div className="flex justify-between items-center font-semibold">
                                     <span>Total</span>
-                                    <span>${ticketSelection.totalPrice}</span>
+                                    <span>Free</span>
                                 </div>
                             </div>
                         </div>

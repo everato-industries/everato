@@ -132,3 +132,104 @@
     max-height: 90vh;
     overflow-y: auto;
 }
+
+/* Events Grid with Subgrid */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.event-card {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 6; /* Number of rows each card should span */
+    background-color: white;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    transition: all 0.2s ease-in-out;
+    gap: 0.5rem;
+}
+
+.event-card:hover {
+    box-shadow:
+        0 10px 25px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.event-image {
+    grid-row: 1 / 2;
+    height: 12rem; /* Reduced from 12rem for more compact cards */
+    margin-bottom: 1rem;
+    aspect-ratio: 16 / 9;
+}
+
+.event-meta {
+    grid-row: 2 / 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.event-content {
+    grid-row: 3 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.event-content h3 {
+    line-height: 1.3;
+}
+
+.event-content p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    max-height: 2.8rem; /* 2 lines × 1.4 line-height */
+}
+
+.event-location {
+    grid-row: 4 / 5;
+    margin-bottom: 1rem;
+}
+
+.event-footer {
+    grid-row: 5 / 6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto; /* Push to bottom */
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+    .events-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .events-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Fallback for browsers that don't support subgrid */
+@supports not (grid-template-rows: subgrid) {
+    .event-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .event-footer {
+        margin-top: auto;
+    }
+}

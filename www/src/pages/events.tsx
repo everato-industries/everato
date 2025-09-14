@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { type Event, eventAPI } from "../lib/api";
 import Layout from "../components/layout";
+import { FaSearch } from "react-icons/fa";
+import { FaLocationPin } from "react-icons/fa6";
 
 interface FilterOptions {
     sortBy: string;
@@ -139,7 +141,12 @@ export default function EventsPage() {
                                     type="submit"
                                     className="bg-white hover:bg-gray-100 px-8 py-5 font-semibold text-black text-lg transition-colors duration-200"
                                 >
-                                    🔍 Search
+                                    <span className="flex justify-between items-center gap-2">
+                                        <FaSearch />
+                                        <span>
+                                            Search
+                                        </span>
+                                    </span>
                                 </button>
                             </div>
                             {searchQuery && (
@@ -215,17 +222,25 @@ export default function EventsPage() {
                     {/* Events Grid */}
                     {loading
                         ? (
-                            <div className="gap-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                            <div className="events-grid">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <div key={i} className="card loading">
-                                        <div className="bg-gray-200 mb-4 h-48">
+                                    <div key={i} className="event-card loading">
+                                        <div className="event-image">
+                                            <div className="bg-gray-200 h-full">
+                                            </div>
                                         </div>
-                                        <div className="bg-gray-200 mb-2 h-4">
+                                        <div className="event-meta">
+                                            <div className="bg-gray-200 mb-2 h-4">
+                                            </div>
+                                            <div className="bg-gray-200 mb-2 w-3/4 h-4">
+                                            </div>
                                         </div>
-                                        <div className="bg-gray-200 mb-2 w-3/4 h-4">
+                                        <div className="event-content">
+                                            <div className="bg-gray-200 w-1/2 h-4">
+                                            </div>
                                         </div>
-                                        <div className="bg-gray-200 w-1/2 h-4">
-                                        </div>
+                                        <div className="event-location"></div>
+                                        <div className="event-footer"></div>
                                     </div>
                                 ))}
                             </div>
@@ -249,55 +264,60 @@ export default function EventsPage() {
                             </div>
                         )
                         : (
-                            <div className="gap-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                            <div className="events-grid">
                                 {events.map((event) => (
-                                    <div
+                                    <article
                                         key={event.id}
-                                        className="group cursor-pointer card"
+                                        className="group cursor-pointer event-card"
                                     >
-                                        <div className="flex justify-center items-center bg-gray-100 mb-4 h-48">
-                                            <span className="text-gray-400">
-                                                Event Image
-                                            </span>
+                                        <div className="event-image">
+                                            <div className="flex justify-center items-center bg-gray-100 h-full">
+                                                <span className="text-gray-400">
+                                                    Event Image
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <div className="mb-2">
-                                            <span className="bg-gray-200 px-2 py-1 text-gray-700 text-xs uppercase tracking-wide">
+                                        <div className="event-meta">
+                                            <span className="bg-gray-200 px-2 py-1 max-w-max text-gray-700 text-xs uppercase tracking-wide">
                                                 {event.status}
                                             </span>
-                                        </div>
-
-                                        <div className="mb-2">
                                             <span className="text-gray-500 text-sm">
                                                 {formatDate(event.start_time)}
                                             </span>
                                         </div>
 
-                                        <h3 className="mb-2 font-semibold text-black group-hover:text-gray-700 text-xl transition-colors duration-200">
-                                            {event.title}
-                                        </h3>
+                                        <div className="event-content">
+                                            <h3 className="font-semibold text-black group-hover:text-gray-700 text-xl transition-colors duration-200">
+                                                {event.title}
+                                            </h3>
+                                            <p className="text-gray-600">
+                                                {event.description}
+                                            </p>
+                                        </div>
 
-                                        <p className="mb-4 text-gray-600 line-clamp-2">
-                                            {event.description}
-                                        </p>
-
-                                        <div className="flex justify-between items-center mb-4">
-                                            <span className="text-gray-500 text-sm">
-                                                📍 {event.location}
-                                            </span>
-                                            <span className="font-semibold text-black text-lg">
-                                                {event.available_seats} /{" "}
-                                                {event.total_seats} seats
+                                        <div className="event-location">
+                                            <span className="flex items-center gap-1 text-gray-500 text-sm">
+                                                <FaLocationPin />
+                                                <span>{event.location}</span>
                                             </span>
                                         </div>
 
-                                        <Link
-                                            to={`/events/${event.slug}`}
-                                            className="w-full text-center btn-primary"
-                                        >
-                                            View Details
-                                        </Link>
-                                    </div>
+                                        <div className="event-footer">
+                                            <Link
+                                                to={`/events/${event.slug}`}
+                                                className="w-full text-center btn-primary"
+                                            >
+                                                View Details
+                                            </Link>
+                                            <span className="text-black text-sm text-center italic">
+                                                <span className="text-gray-400">
+                                                    {event.available_seats} /
+                                                </span>
+                                                {event.total_seats} seats
+                                            </span>
+                                        </div>
+                                    </article>
                                 ))}
                             </div>
                         )}

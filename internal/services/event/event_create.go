@@ -5,7 +5,6 @@ package event
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -234,8 +233,8 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 	// Create coupons for the event (if any)
 	var createdCoupons []repository.Coupon
 	for i, couponDTO := range eventDTO.Coupons {
-		// Parse coupon dates manually to ensure proper pgtype.Timestamptz format
-		validFromTime, err := time.Parse(time.RFC3339, couponDTO.ValidFrom)
+		// Parse coupon dates with flexible format support
+		validFromTime, err := ParseFlexibleTime(couponDTO.ValidFrom)
 		if err != nil {
 			logger.StdoutLogger.Error("Failed to parse coupon valid_from", "couponIndex", i, "err", err.Error())
 			tx.Rollback(wr.R.Context())
@@ -248,7 +247,7 @@ func CreateEvent(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn)
 			return
 		}
 
-		validUntilTime, err := time.Parse(time.RFC3339, couponDTO.ValidUntil)
+		validUntilTime, err := ParseFlexibleTime(couponDTO.ValidUntil)
 		if err != nil {
 			logger.StdoutLogger.Error("Failed to parse coupon valid_until", "couponIndex", i, "err", err.Error())
 			tx.Rollback(wr.R.Context())

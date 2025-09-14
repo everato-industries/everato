@@ -1,4 +1,4 @@
-name: Everato
+name: Everato Development
 version: 1.0.0
 api_prefix: /api/v1
 req_timeout: 15s

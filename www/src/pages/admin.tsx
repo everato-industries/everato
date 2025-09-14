@@ -21,7 +21,7 @@ interface DashboardStats {
 // Login Form Component
 function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [credentials, setCredentials] = useState({
-        username: "",
+        email: "",
         password: "",
     });
     const [loading, setLoading] = useState(false);
@@ -75,11 +75,11 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                             type="text"
                             required
                             className="px-4 py-3 border border-gray-300 focus:border-black rounded-md focus:outline-none w-full"
-                            value={credentials.username}
+                            value={credentials.email}
                             onChange={(e) =>
                                 setCredentials((prev) => ({
                                     ...prev,
-                                    username: e.target.value,
+                                    email: e.target.value,
                                 }))}
                         />
                     </div>

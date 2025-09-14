@@ -257,9 +257,19 @@ export default function CreateEventPage() {
         setSuccess("");
 
         try {
-            // Convert datetime-local to ISO format
+            // Transform nested objects to flat fields matching the DTO structure
+            const {
+                banner_file,
+                icon_file,
+                social_links,
+                venue_details,
+                organizer_info,
+                ...baseFormData
+            } = formData;
+
+            // Convert datetime-local to ISO format and flatten nested objects
             const submitData = {
-                ...formData,
+                ...baseFormData,
                 start_time: new Date(formData.start_time).toISOString(),
                 end_time: new Date(formData.end_time).toISOString(),
                 booking_start_time: formData.booking_start_time
@@ -268,23 +278,48 @@ export default function CreateEventPage() {
                 booking_end_time: formData.booking_end_time
                     ? new Date(formData.booking_end_time).toISOString()
                     : new Date(formData.start_time).toISOString(),
+                // Send tags as array for better backend compatibility with TEXT[] database field
                 tags: formData.tags.split(",").map((tag) => tag.trim()).filter(
                     (tag) => tag,
                 ),
+                // Flatten social links
+                website_url: social_links?.website || "",
+                facebook_url: social_links?.facebook || "",
+                twitter_url: social_links?.twitter || "",
+                instagram_url: social_links?.instagram || "",
+                linkedin_url: social_links?.linkedin || "",
+                // Flatten venue details
+                venue_name: venue_details?.venue_name || "",
+                address_line1: venue_details?.address_line1 || "",
+                address_line2: venue_details?.address_line2 || "",
+                city: venue_details?.city || "",
+                state: venue_details?.state || "",
+                postal_code: venue_details?.postal_code || "",
+                country: venue_details?.country || "",
+                // Flatten organizer info
+                organizer_name: organizer_info?.organizer_name || "",
+                organizer_email: organizer_info?.organizer_email || "",
+                organizer_phone: organizer_info?.organizer_phone || "",
+                organization: organizer_info?.organization || "",
+                // Handle file uploads as URLs (placeholder for now)
+                banner_url: banner_file
+                    ? "https://placeholder.com/banner.jpg"
+                    : (formData.banner_url || ""),
+                icon_url: icon_file
+                    ? "https://placeholder.com/icon.jpg"
+                    : (formData.icon_url || ""),
             };
 
-            // Remove file fields from API submission (would need separate upload endpoint)
-            const { banner_file, icon_file, ...apiData } = submitData;
+            // Debug logging to see what data is being sent
+            console.log("Organizer info from form:", organizer_info);
+            console.log("Submit data organizer fields:", {
+                organizer_name: submitData.organizer_name,
+                organizer_email: submitData.organizer_email,
+                organizer_phone: submitData.organizer_phone,
+                organization: submitData.organization,
+            });
 
-            // For now, use placeholder URLs if files are selected
-            if (banner_file) {
-                apiData.banner_url = "https://placeholder.com/banner.jpg";
-            }
-            if (icon_file) {
-                apiData.icon_url = "https://placeholder.com/icon.jpg";
-            }
-
-            const response = await api.post("/events/create", apiData);
+            const response = await api.post("/events/create", submitData);
 
             if (response.data) {
                 setSuccess("Event created successfully!");
@@ -293,10 +328,13 @@ export default function CreateEventPage() {
                     navigate("/admin");
                 }, 2000);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Event creation failed:", error);
-            const errorMessage = error.response?.data?.message ||
-                error.response?.data?.error ||
+            const axiosError = error as {
+                response?: { data?: { message?: string; error?: string } };
+            };
+            const errorMessage = axiosError.response?.data?.message ||
+                axiosError.response?.data?.error ||
                 "Failed to create event. Please try again.";
             setError(errorMessage);
         } finally {
