@@ -230,3 +230,15 @@ WHERE code = $1
     AND valid_until >= CURRENT_TIMESTAMP
     AND usage_count < usage_limit
 LIMIT 1;
+
+-- name: GetTicketTypesByEventSlug :many
+SELECT tt.* FROM ticket_types tt
+JOIN events e ON tt.event_id = e.id
+WHERE e.slug = $1
+ORDER BY tt.price ASC;
+
+-- name: GetCouponsByEventSlug :many
+SELECT c.* FROM coupons c
+JOIN events e ON c.event_id = e.id
+WHERE e.slug = $1
+ORDER BY c.created_at DESC;

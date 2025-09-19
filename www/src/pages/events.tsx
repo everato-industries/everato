@@ -36,11 +36,25 @@ export default function EventsPage() {
                     offset,
                 );
 
+                console.log("API Response:", response.data); // Debug log
+                console.log(
+                    "Current page:",
+                    currentPage,
+                    "Offset:",
+                    offset,
+                    "Limit:",
+                    eventsPerPage,
+                );
+
                 if (response.data && response.data.data) {
                     const fetchedEvents: Event[] =
                         Array.isArray(response.data.data)
                             ? response.data.data
                             : [];
+
+                    // Get total count from API response
+                    const totalFromAPI =
+                        response.data.pagination?.total_count || 0;
 
                     // Apply client-side filters for search query
                     let filteredEvents = fetchedEvents;
@@ -54,6 +68,12 @@ export default function EventsPage() {
                                 searchQuery.toLowerCase(),
                             )
                         );
+                        // For search, use filtered count since we're searching on client side
+                        setTotalEvents(filteredEvents.length);
+                    } else {
+                        // For normal pagination, use server count
+                        setTotalEvents(totalFromAPI);
+                        console.log("Using server total count:", totalFromAPI);
                     }
 
                     // Sort events
@@ -69,7 +89,6 @@ export default function EventsPage() {
                     }
 
                     setEvents(filteredEvents);
-                    setTotalEvents(filteredEvents.length);
                 } else {
                     setEvents([]);
                     setTotalEvents(0);
@@ -87,11 +106,15 @@ export default function EventsPage() {
     }, [filters, searchQuery, currentPage, eventsPerPage]);
 
     const handleFilterChange = (key: keyof FilterOptions, value: string) => {
+        // Reset to page 1 when filters change
+        setCurrentPage(1);
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // Reset to page 1 when searching
+        setCurrentPage(1);
         if (searchQuery) {
             setSearchParams({ q: searchQuery });
         } else {

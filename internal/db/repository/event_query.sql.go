@@ -415,6 +415,44 @@ func (q *Queries) GetCouponsByEventID(ctx context.Context, eventID pgtype.UUID) 
 	return items, nil
 }
 
+const getCouponsByEventSlug = `-- name: GetCouponsByEventSlug :many
+SELECT c.id, c.event_id, c.code, c.discount_percentage, c.valid_from, c.valid_until, c.usage_limit, c.created_at, c.updated_at, c.usage_count FROM coupons c
+JOIN events e ON c.event_id = e.id
+WHERE e.slug = $1
+ORDER BY c.created_at DESC
+`
+
+func (q *Queries) GetCouponsByEventSlug(ctx context.Context, slug string) ([]Coupon, error) {
+	rows, err := q.db.Query(ctx, getCouponsByEventSlug, slug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Coupon
+	for rows.Next() {
+		var i Coupon
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventID,
+			&i.Code,
+			&i.DiscountPercentage,
+			&i.ValidFrom,
+			&i.ValidUntil,
+			&i.UsageLimit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UsageCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDashboardStats = `-- name: GetDashboardStats :one
 SELECT
     COUNT(*) as total_events,
@@ -644,6 +682,39 @@ ORDER BY price ASC
 
 func (q *Queries) GetTicketTypesByEventID(ctx context.Context, eventID pgtype.UUID) ([]TicketType, error) {
 	rows, err := q.db.Query(ctx, getTicketTypesByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TicketType
+	for rows.Next() {
+		var i TicketType
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.EventID,
+			&i.Price,
+			&i.AvailableTickets,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTicketTypesByEventSlug = `-- name: GetTicketTypesByEventSlug :many
+SELECT tt.id, tt.name, tt.event_id, tt.price, tt.available_tickets FROM ticket_types tt
+JOIN events e ON tt.event_id = e.id
+WHERE e.slug = $1
+ORDER BY tt.price ASC
+`
+
+func (q *Queries) GetTicketTypesByEventSlug(ctx context.Context, slug string) ([]TicketType, error) {
+	rows, err := q.db.Query(ctx, getTicketTypesByEventSlug, slug)
 	if err != nil {
 		return nil, err
 	}

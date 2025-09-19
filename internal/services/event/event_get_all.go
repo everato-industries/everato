@@ -48,6 +48,19 @@ func GetAllEvents(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn
 		return
 	}
 
+	// Get total count of events for pagination
+	totalCount, err := repo.CountTotalEvents(wr.R.Context())
+	if err != nil {
+		wr.Status(http.StatusInternalServerError).Json(
+			utils.M{
+				"message": "Error while counting events",
+				"error":   err.Error(),
+			},
+		)
+		return
+	}
+
+	// Get paginated events
 	events, err := repo.ListEvents(wr.R.Context(), repository.ListEventsParams{
 		Limit:  int32(limitInt),
 		Offset: int32(offsetInt),
@@ -62,10 +75,23 @@ func GetAllEvents(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn
 		return
 	}
 
+	// Calculate pagination metadata
+	totalPages := (int(totalCount) + limitInt - 1) / limitInt
+	currentPage := (offsetInt / limitInt) + 1
+
 	wr.Status(http.StatusOK).Json(
 		utils.M{
 			"message": "Events fetched successfully",
 			"data":    events,
+			"pagination": utils.M{
+				"total_count":  totalCount,
+				"total_pages":  totalPages,
+				"current_page": currentPage,
+				"limit":        limitInt,
+				"offset":       offsetInt,
+				"has_next":     currentPage < totalPages,
+				"has_previous": currentPage > 1,
+			},
 		},
 	)
 }

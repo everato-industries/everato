@@ -2,23 +2,43 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Layout from "../components/layout";
 import api from "../lib/api";
+import { isAuthenticated } from "../lib/auth";
+
+interface TicketType {
+    id: string;
+    name: string;
+    event_id: string;
+    price: number;
+    available_tickets: number;
+}
+
+interface Coupon {
+    id: string;
+    event_id: string;
+    code: string;
+    discount_percentage: number;
+    valid_from: string;
+    valid_until: string;
+    usage_limit: number;
+    usage_count?: number;
+    created_at: string;
+    updated_at: string;
+}
 
 interface Event {
     id: string;
     title: string;
     description: string;
-    banner?: string;
-    icon?: string;
+    banner: string;
+    icon: string;
     admin_id: string;
     start_time: string;
     end_time: string;
     location: string;
     total_seats: number;
     available_seats: number;
-    created_at: string;
-    updated_at: string;
     slug: string;
-    status: string;
+    // Additional comprehensive fields
     organizer_name?: string;
     organizer_email?: string;
     organizer_phone?: string;
@@ -27,12 +47,12 @@ interface Event {
     contact_phone?: string;
     refund_policy?: string;
     terms_and_conditions?: string;
-    event_type: string;
-    category: string;
-    max_tickets_per_user: number;
+    event_type?: string;
+    category?: string;
+    max_tickets_per_user?: number;
     booking_start_time?: string;
     booking_end_time?: string;
-    tags: string[];
+    tags?: string[];
     website_url?: string;
     facebook_url?: string;
     twitter_url?: string;
@@ -47,11 +67,42 @@ interface Event {
     country?: string;
     latitude?: number;
     longitude?: number;
+    created_at: string;
+    updated_at: string;
+    // Deprecated/legacy fields for backward compatibility
+    date?: string;
+    time?: string;
+    endDate?: string;
+    endTime?: string;
+    venue?: string;
+    price?: number;
+    image?: string;
+    organizer?: {
+        name: string;
+        email: string;
+        avatar?: string;
+    };
+    capacity?: number;
+    availableTickets?: number;
+    // New fields for ticket types and coupons
+    ticket_types: TicketType[];
+    coupons: Coupon[];
+}
+
+interface SelectedTicket {
+    ticketTypeId: string;
+    quantity: number;
+    price: number;
 }
 
 interface TicketSelection {
-    quantity: number;
+    selectedTickets: SelectedTicket[];
     totalPrice: number;
+    appliedCoupon?: {
+        code: string;
+        discountPercentage: number;
+    };
+    finalPrice: number;
 }
 
 export default function EventDetailPage() {
@@ -59,10 +110,13 @@ export default function EventDetailPage() {
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [ticketSelection, setTicketSelection] = useState<TicketSelection>({
-        quantity: 1,
+        selectedTickets: [],
         totalPrice: 0,
+        finalPrice: 0,
     });
     const [showBookingModal, setShowBookingModal] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
+    const [couponError, setCouponError] = useState("");
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -90,22 +144,79 @@ export default function EventDetailPage() {
         }
     }, [slug]);
 
-    const handleQuantityChange = (newQuantity: number) => {
-        if (
-            event && newQuantity >= 1 &&
-            newQuantity <=
-                Math.min(
-                    event.max_tickets_per_user || 10,
-                    event.available_seats,
-                )
-        ) {
-            // Since there's no price in the API response, we'll set it to 0 for now
-            // You may need to add a price field to your API or handle pricing differently
-            setTicketSelection({
-                quantity: newQuantity,
-                totalPrice: newQuantity * 0, // No price field in API
-            });
+    const updateTicketQuantity = (
+        ticketTypeId: string,
+        quantity: number,
+        price: number,
+    ) => {
+        const existingTickets = ticketSelection.selectedTickets.filter((t) =>
+            t.ticketTypeId !== ticketTypeId
+        );
+        const newTickets = quantity > 0
+            ? [...existingTickets, { ticketTypeId, quantity, price }]
+            : existingTickets;
+
+        const totalPrice = newTickets.reduce(
+            (sum, ticket) => sum + (ticket.quantity * ticket.price),
+            0,
+        );
+        const discount = ticketSelection.appliedCoupon
+            ? (totalPrice * ticketSelection.appliedCoupon.discountPercentage /
+                100)
+            : 0;
+        const finalPrice = totalPrice - discount;
+
+        setTicketSelection({
+            ...ticketSelection,
+            selectedTickets: newTickets,
+            totalPrice,
+            finalPrice,
+        });
+    };
+
+    const applyCoupon = (code: string) => {
+        if (!event) return;
+
+        const coupon = event.coupons.find((c) =>
+            c.code.toLowerCase() === code.toLowerCase()
+        );
+        if (!coupon) {
+            setCouponError("Invalid coupon code");
+            return;
         }
+
+        const now = new Date();
+        const validFrom = new Date(coupon.valid_from);
+        const validUntil = new Date(coupon.valid_until);
+
+        if (now < validFrom || now > validUntil) {
+            setCouponError("Coupon has expired or is not yet valid");
+            return;
+        }
+
+        setCouponError("");
+        const totalPrice = ticketSelection.totalPrice;
+        const discount = totalPrice * coupon.discount_percentage / 100;
+        const finalPrice = totalPrice - discount;
+
+        setTicketSelection({
+            ...ticketSelection,
+            appliedCoupon: {
+                code: coupon.code,
+                discountPercentage: coupon.discount_percentage,
+            },
+            finalPrice,
+        });
+    };
+
+    const removeCoupon = () => {
+        setCouponError("");
+        setTicketSelection({
+            ...ticketSelection,
+            appliedCoupon: undefined,
+            finalPrice: ticketSelection.totalPrice,
+        });
+        setCouponCode("");
     };
 
     const formatDate = (dateTime: string) => {
@@ -204,7 +315,7 @@ export default function EventDetailPage() {
                             </h1>
 
                             <div className="flex flex-wrap gap-2 mb-6">
-                                {event.tags.map((tag) => (
+                                {(event.tags || []).map((tag) => (
                                     <span
                                         key={tag}
                                         className="bg-black px-2 py-1 text-white text-xs"
@@ -280,6 +391,312 @@ export default function EventDetailPage() {
                                 </div>
                             </div>
 
+                            {/* Ticket Selection */}
+                            {event.ticket_types &&
+                                event.ticket_types.length > 0 && (
+                                <div className="mb-8">
+                                    <h3 className="mb-4 font-bold text-black text-2xl">
+                                        🎫 Select Tickets
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {event.ticket_types.map(
+                                            (ticketType) => {
+                                                const selectedTicket =
+                                                    ticketSelection
+                                                        .selectedTickets.find(
+                                                            (t) =>
+                                                                t.ticketTypeId ===
+                                                                    ticketType
+                                                                        .id,
+                                                        );
+                                                const currentQuantity =
+                                                    selectedTicket?.quantity ||
+                                                    0;
+                                                const maxQuantity = Math.min(
+                                                    ticketType
+                                                        .available_tickets,
+                                                    event
+                                                        .max_tickets_per_user ||
+                                                        10,
+                                                );
+
+                                                return (
+                                                    <div
+                                                        key={ticketType.id}
+                                                        className={`border p-4 transition-colors ${
+                                                            currentQuantity > 0
+                                                                ? "bg-blue-50 border-blue-200"
+                                                                : "bg-gray-50 border-gray-200"
+                                                        }`}
+                                                    >
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-3">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={`ticket-${ticketType.id}`}
+                                                                        checked={currentQuantity >
+                                                                            0}
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) => {
+                                                                            if (
+                                                                                e.target
+                                                                                    .checked
+                                                                            ) {
+                                                                                updateTicketQuantity(
+                                                                                    ticketType
+                                                                                        .id,
+                                                                                    1,
+                                                                                    ticketType
+                                                                                        .price,
+                                                                                );
+                                                                            } else {
+                                                                                updateTicketQuantity(
+                                                                                    ticketType
+                                                                                        .id,
+                                                                                    0,
+                                                                                    ticketType
+                                                                                        .price,
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                        className="bg-white disabled:opacity-50 border-2 border-gray-300 focus:border-black rounded focus:ring-2 focus:ring-black w-5 h-5 text-black accent-black disabled:cursor-not-allowed"
+                                                                        disabled={maxQuantity ===
+                                                                            0}
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`ticket-${ticketType.id}`}
+                                                                        className="font-semibold text-black text-lg cursor-pointer"
+                                                                    >
+                                                                        {ticketType
+                                                                            .name}
+                                                                    </label>
+                                                                </div>
+                                                                <p className="mt-1 text-gray-600 text-sm">
+                                                                    {maxQuantity ===
+                                                                            0
+                                                                        ? "Sold Out"
+                                                                        : `Available: ${ticketType.available_tickets} tickets`}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="font-bold text-black text-xl">
+                                                                    ${ticketType
+                                                                        .price
+                                                                        .toFixed(
+                                                                            2,
+                                                                        )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {currentQuantity > 0 &&
+                                                            (
+                                                                <div className="flex justify-between items-center bg-white p-3 border rounded">
+                                                                    <span className="text-gray-700">
+                                                                        Quantity:
+                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                updateTicketQuantity(
+                                                                                    ticketType
+                                                                                        .id,
+                                                                                    Math.max(
+                                                                                        0,
+                                                                                        currentQuantity -
+                                                                                            1,
+                                                                                    ),
+                                                                                    ticketType
+                                                                                        .price,
+                                                                                )}
+                                                                            disabled={currentQuantity <=
+                                                                                1}
+                                                                            className="flex justify-center items-center bg-white hover:bg-gray-50 disabled:opacity-50 border border-gray-300 w-8 h-8 font-semibold text-black transition-colors disabled:cursor-not-allowed"
+                                                                        >
+                                                                            -
+                                                                        </button>
+                                                                        <span className="mx-3 min-w-[2rem] font-semibold text-center">
+                                                                            {currentQuantity}
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                updateTicketQuantity(
+                                                                                    ticketType
+                                                                                        .id,
+                                                                                    Math.min(
+                                                                                        maxQuantity,
+                                                                                        currentQuantity +
+                                                                                            1,
+                                                                                    ),
+                                                                                    ticketType
+                                                                                        .price,
+                                                                                )}
+                                                                            disabled={currentQuantity >=
+                                                                                maxQuantity}
+                                                                            className="flex justify-center items-center bg-white hover:bg-gray-50 disabled:opacity-50 border border-gray-300 w-8 h-8 font-semibold text-black transition-colors disabled:cursor-not-allowed"
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+
+                                    {/* Coupon Application */}
+                                    {ticketSelection.selectedTickets.length >
+                                            0 && (
+                                        <div className="bg-white mt-6 p-4 border border-gray-200 rounded">
+                                            <h4 className="mb-3 font-semibold text-gray-800">
+                                                Have a coupon code?
+                                            </h4>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={couponCode}
+                                                    onChange={(e) =>
+                                                        setCouponCode(
+                                                            e.target.value
+                                                                .toUpperCase(),
+                                                        )}
+                                                    placeholder="Enter coupon code"
+                                                    className="flex-1 input-field"
+                                                />
+                                                <button
+                                                    onClick={() =>
+                                                        applyCoupon(couponCode)}
+                                                    disabled={!couponCode
+                                                        .trim()}
+                                                    className="disabled:opacity-50 disabled:cursor-not-allowed btn-primary"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                            {couponError && (
+                                                <p className="mt-2 text-red-600 text-sm">
+                                                    {couponError}
+                                                </p>
+                                            )}
+                                            {ticketSelection.appliedCoupon && (
+                                                <div className="flex justify-between items-center bg-green-50 mt-3 p-2 border border-green-200 rounded">
+                                                    <span className="font-medium text-green-800">
+                                                        Coupon "{ticketSelection
+                                                            .appliedCoupon
+                                                            .code}" applied
+                                                        ({ticketSelection
+                                                            .appliedCoupon
+                                                            .discountPercentage}%
+                                                        off)
+                                                    </span>
+                                                    <button
+                                                        onClick={removeCoupon}
+                                                        className="text-red-600 hover:text-red-800 text-sm underline"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Coupons - Admin Only */}
+                            {isAuthenticated() && event.coupons &&
+                                event.coupons.length > 0 && (
+                                <div className="mb-8">
+                                    <h3 className="mb-4 font-bold text-black text-2xl">
+                                        🎟️ Available Coupons
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {event.coupons.map((coupon) => {
+                                            const isValid =
+                                                new Date(coupon.valid_until) >
+                                                    new Date();
+                                            const usagePercent =
+                                                coupon.usage_count
+                                                    ? (coupon.usage_count /
+                                                        coupon.usage_limit) *
+                                                        100
+                                                    : 0;
+
+                                            return (
+                                                <div
+                                                    key={coupon.id}
+                                                    className={`border p-4 ${
+                                                        isValid
+                                                            ? "bg-green-50 border-green-200"
+                                                            : "bg-gray-50 border-gray-200 opacity-60"
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <code className="bg-gray-800 px-2 py-1 font-mono text-white text-sm">
+                                                                    {coupon
+                                                                        .code}
+                                                                </code>
+                                                                {!isValid && (
+                                                                    <span className="bg-red-100 px-2 py-1 text-red-600 text-xs">
+                                                                        Expired
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="mb-1 text-gray-600 text-sm">
+                                                                Valid until:
+                                                                {" "}
+                                                                {new Date(
+                                                                    coupon
+                                                                        .valid_until,
+                                                                ).toLocaleDateString()}
+                                                            </p>
+                                                            <p className="text-gray-600 text-sm">
+                                                                Used: {coupon
+                                                                    .usage_count ||
+                                                                    0} / {coupon
+                                                                    .usage_limit}
+                                                                {" "}
+                                                                times
+                                                            </p>
+                                                            {usagePercent > 0 &&
+                                                                (
+                                                                    <div className="bg-gray-200 mt-2 w-full h-2">
+                                                                        <div
+                                                                            className="bg-blue-500 h-2"
+                                                                            style={{
+                                                                                width:
+                                                                                    `${
+                                                                                        Math.min(
+                                                                                            usagePercent,
+                                                                                            100,
+                                                                                        )
+                                                                                    }%`,
+                                                                            }}
+                                                                        >
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="font-bold text-green-600 text-xl">
+                                                                {coupon
+                                                                    .discount_percentage}%
+                                                                OFF
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <h3 className="mb-4 font-bold text-black text-2xl">
                                     About This Event
@@ -305,79 +722,119 @@ export default function EventDetailPage() {
                         <div className="top-8 sticky">
                             <div className="card">
                                 <div className="mb-6 text-center">
-                                    <div className="mb-2 font-bold text-black text-3xl">
-                                        Free
-                                    </div>
-                                    <div className="text-gray-600">
-                                        per ticket
-                                    </div>
+                                    {ticketSelection.selectedTickets.length > 0
+                                        ? (
+                                            <div>
+                                                <div className="mb-2 font-bold text-black text-2xl">
+                                                    Total: ${ticketSelection
+                                                        .totalPrice.toFixed(2)}
+                                                </div>
+                                                {ticketSelection
+                                                    .appliedCoupon && (
+                                                    <div className="mb-2">
+                                                        <div className="text-green-600 text-sm">
+                                                            Discount:
+                                                            -${(ticketSelection
+                                                                .totalPrice -
+                                                                ticketSelection
+                                                                    .finalPrice)
+                                                                .toFixed(2)}
+                                                        </div>
+                                                        <div className="font-bold text-green-700 text-xl">
+                                                            Final:
+                                                            ${ticketSelection
+                                                                .finalPrice
+                                                                .toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                        : (
+                                            <div>
+                                                <div className="mb-2 font-bold text-black text-3xl">
+                                                    Select Tickets
+                                                </div>
+                                                <div className="text-gray-600">
+                                                    Choose from available types
+                                                    below
+                                                </div>
+                                            </div>
+                                        )}
                                 </div>
 
-                                <div className="space-y-4 mb-6">
-                                    <div>
-                                        <label className="block mb-2 font-medium text-black text-sm">
-                                            Number of Tickets
-                                        </label>
-                                        <div className="flex items-center border border-gray-300">
-                                            <button
-                                                onClick={() =>
-                                                    handleQuantityChange(
-                                                        ticketSelection
-                                                            .quantity - 1,
-                                                    )}
-                                                className="hover:bg-gray-100 px-4 py-2 transition-colors duration-200"
-                                                disabled={ticketSelection
-                                                    .quantity <= 1}
-                                            >
-                                                -
-                                            </button>
-                                            <span className="flex-1 py-2 border-gray-300 border-r border-l text-center">
-                                                {ticketSelection.quantity}
-                                            </span>
-                                            <button
-                                                onClick={() =>
-                                                    handleQuantityChange(
-                                                        ticketSelection
-                                                            .quantity + 1,
-                                                    )}
-                                                className="hover:bg-gray-100 px-4 py-2 transition-colors duration-200"
-                                                disabled={ticketSelection
-                                                    .quantity >=
-                                                    Math.min(
-                                                        event
-                                                            .max_tickets_per_user ||
-                                                            10,
-                                                        event.available_seats,
-                                                    )}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                        <p className="mt-1 text-gray-500 text-xs">
-                                            Maximum 10 tickets per order
-                                        </p>
-                                    </div>
+                                {ticketSelection.selectedTickets.length > 0 && (
+                                    <div className="space-y-3 mb-6">
+                                        <h4 className="font-semibold text-black text-sm">
+                                            Selected Tickets:
+                                        </h4>
+                                        {ticketSelection.selectedTickets.map(
+                                            (selectedTicket) => {
+                                                const ticketType = event
+                                                    .ticket_types.find((t) =>
+                                                        t.id ===
+                                                            selectedTicket
+                                                                .ticketTypeId
+                                                    );
+                                                return (
+                                                    <div
+                                                        key={selectedTicket
+                                                            .ticketTypeId}
+                                                        className="flex justify-between items-center bg-gray-50 p-3 rounded"
+                                                    >
+                                                        <div>
+                                                            <div className="font-medium text-black">
+                                                                {ticketType
+                                                                    ?.name}
+                                                            </div>
+                                                            <div className="text-gray-600 text-sm">
+                                                                {selectedTicket
+                                                                    .quantity}
+                                                                {" "}
+                                                                ×
+                                                                ${selectedTicket
+                                                                    .price
+                                                                    .toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="font-semibold text-black">
+                                                            ${(selectedTicket
+                                                                .quantity *
+                                                                selectedTicket
+                                                                    .price)
+                                                                .toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            },
+                                        )}
 
-                                    <div className="bg-gray-50 p-4">
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-medium text-black">
-                                                Total:
-                                            </span>
-                                            <span className="font-bold text-black text-xl">
-                                                ${ticketSelection.totalPrice}
-                                            </span>
-                                        </div>
+                                        {ticketSelection.appliedCoupon && (
+                                            <div className="flex justify-between items-center bg-green-50 p-3 border border-green-200 rounded">
+                                                <div className="font-medium text-green-800">
+                                                    Coupon: {ticketSelection
+                                                        .appliedCoupon.code}
+                                                </div>
+                                                <div className="font-semibold text-green-800">
+                                                    -{ticketSelection
+                                                        .appliedCoupon
+                                                        .discountPercentage}%
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                )}
 
                                 <button
                                     onClick={() => setShowBookingModal(true)}
                                     className="mb-4 w-full btn-primary"
-                                    disabled={event.available_seats === 0}
+                                    disabled={ticketSelection.selectedTickets
+                                        .length === 0}
                                 >
-                                    {event.available_seats === 0
-                                        ? "Sold Out"
-                                        : "Book Now"}
+                                    {ticketSelection.selectedTickets.length ===
+                                            0
+                                        ? "Select Tickets First"
+                                        : "Proceed to Checkout"}
                                 </button>
 
                                 <div className="text-gray-500 text-xs text-center">
@@ -397,15 +854,44 @@ export default function EventDetailPage() {
                                     Share This Event
                                 </h3>
                                 <div className="flex space-x-3">
-                                    <button className="flex-1 text-sm btn-secondary">
+                                    <a
+                                        href={`https://www.facebook.com/sharer/sharer.php?u=${
+                                            encodeURIComponent(
+                                                window.location.href,
+                                            )
+                                        }`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 text-sm text-center btn-secondary"
+                                    >
                                         Facebook
-                                    </button>
-                                    <button className="flex-1 text-sm btn-secondary">
+                                    </a>
+                                    <a
+                                        href={`https://twitter.com/intent/tweet?url=${
+                                            encodeURIComponent(
+                                                window.location.href,
+                                            )
+                                        }&text=${
+                                            encodeURIComponent(event.title)
+                                        }`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 text-sm text-center btn-secondary"
+                                    >
                                         Twitter
-                                    </button>
-                                    <button className="flex-1 text-sm btn-secondary">
+                                    </a>
+                                    <a
+                                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${
+                                            encodeURIComponent(
+                                                window.location.href,
+                                            )
+                                        }`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 text-sm text-center btn-secondary"
+                                    >
                                         LinkedIn
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -435,15 +921,57 @@ export default function EventDetailPage() {
                             </p>
 
                             <div className="bg-gray-50 p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span>
-                                        Tickets × {ticketSelection.quantity}
-                                    </span>
-                                    <span>Free</span>
-                                </div>
-                                <div className="flex justify-between items-center font-semibold">
-                                    <span>Total</span>
-                                    <span>Free</span>
+                                {ticketSelection.selectedTickets.map(
+                                    (selectedTicket) => {
+                                        const ticketType = event.ticket_types
+                                            .find((t) =>
+                                                t.id ===
+                                                    selectedTicket.ticketTypeId
+                                            );
+                                        return (
+                                            <div
+                                                key={selectedTicket
+                                                    .ticketTypeId}
+                                                className="flex justify-between items-center mb-2"
+                                            >
+                                                <span>
+                                                    {ticketType?.name} ×{" "}
+                                                    {selectedTicket.quantity}
+                                                </span>
+                                                <span>
+                                                    ${(selectedTicket.quantity *
+                                                        selectedTicket.price)
+                                                        .toFixed(2)}
+                                                </span>
+                                            </div>
+                                        );
+                                    },
+                                )}
+
+                                {ticketSelection.appliedCoupon && (
+                                    <div className="flex justify-between items-center mb-2 text-green-600">
+                                        <span>
+                                            Coupon:{" "}
+                                            {ticketSelection.appliedCoupon.code}
+                                        </span>
+                                        <span>
+                                            -${(ticketSelection.totalPrice -
+                                                ticketSelection.finalPrice)
+                                                .toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="mt-2 pt-2 border-gray-300 border-t">
+                                    <div className="flex justify-between items-center font-semibold">
+                                        <span>Total</span>
+                                        <span>
+                                            ${(ticketSelection.appliedCoupon
+                                                ? ticketSelection.finalPrice
+                                                : ticketSelection.totalPrice)
+                                                .toFixed(2)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -456,7 +984,11 @@ export default function EventDetailPage() {
                                 Cancel
                             </button>
                             <Link
-                                to={`/checkout?event=${event.id}&quantity=${ticketSelection.quantity}`}
+                                to={`/checkout?event=${event.id}&tickets=${
+                                    encodeURIComponent(
+                                        JSON.stringify(ticketSelection),
+                                    )
+                                }`}
                                 className="flex-1 text-center btn-primary"
                             >
                                 Proceed to Checkout
