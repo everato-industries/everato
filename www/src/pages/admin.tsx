@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/layout";
 import api, { type Event, eventAPI } from "../lib/api";
@@ -16,6 +16,15 @@ interface DashboardStats {
     totalTicketsSold: number;
     totalRevenue: number;
     upcomingEvents: number;
+}
+
+// Event Management State Interface
+interface EventFilters {
+    search: string;
+    sortBy: "title" | "created_at" | "start_time";
+    sortOrder: "asc" | "desc";
+    page: number;
+    limit: number;
 }
 
 // Login Form Component
@@ -128,6 +137,18 @@ function AdminDashboard() {
     const [recentEvents, setRecentEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Event management state
+    const [allEvents, setAllEvents] = useState<Event[]>([]);
+    const [eventsLoading, setEventsLoading] = useState(false);
+    const [totalEvents, setTotalEvents] = useState(0);
+    const [eventFilters, setEventFilters] = useState<EventFilters>({
+        search: "",
+        sortBy: "created_at",
+        sortOrder: "desc",
+        page: 1,
+        limit: 10,
+    });
+
     useEffect(() => {
         fetchDashboardData();
     }, []);
@@ -173,9 +194,72 @@ function AdminDashboard() {
         }
     };
 
+    const fetchAllEvents = useCallback(async () => {
+        console.log("Fetching all events...", { eventFilters });
+        try {
+            setEventsLoading(true);
+
+            const offset = (eventFilters.page - 1) * eventFilters.limit;
+            const response = await eventAPI.getAllEventsWithFilters({
+                limit: eventFilters.limit,
+                offset: offset,
+                // Note: search, sortBy, sortOrder not yet supported by backend
+            });
+
+            console.log("API Response:", response.data);
+
+            if (response.data) {
+                // The backend returns events directly in the 'data' field
+                const events = Array.isArray(response.data.data)
+                    ? response.data.data
+                    : [];
+                console.log("Setting events:", events.length, "events");
+                setAllEvents(events);
+                setTotalEvents(response.data.pagination?.total_count || 0);
+            }
+        } catch (error) {
+            console.error("Error fetching all events:", error);
+        } finally {
+            setEventsLoading(false);
+        }
+    }, [eventFilters]);
+
+    useEffect(() => {
+        console.log("useEffect triggered:", { activeTab });
+        if (activeTab === "events") {
+            console.log("Active tab is events, fetching...");
+            fetchAllEvents();
+        }
+    }, [activeTab, fetchAllEvents]);
+
     const handleLogout = () => {
         clearAuthData();
         window.location.reload();
+    };
+
+    const handleSearchChange = (search: string) => {
+        setEventFilters((prev) => ({ ...prev, search, page: 1 }));
+    };
+
+    const handleSortChange = (
+        sortBy: "title" | "created_at" | "start_time",
+    ) => {
+        setEventFilters((prev) => ({
+            ...prev,
+            sortBy,
+            sortOrder: prev.sortBy === sortBy && prev.sortOrder === "asc"
+                ? "desc"
+                : "asc",
+            page: 1,
+        }));
+    };
+
+    const handlePageChange = (page: number) => {
+        setEventFilters((prev) => ({ ...prev, page }));
+    };
+
+    const getTotalPages = () => {
+        return Math.ceil(totalEvents / eventFilters.limit);
     };
 
     const formatCurrency = (amount: number) => {
@@ -431,69 +515,239 @@ function AdminDashboard() {
 
                         <div className="card">
                             <div className="px-6 py-4 border-b">
-                                <h3 className="font-semibold text-black text-lg">
-                                    All Events
-                                </h3>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-semibold text-black text-lg">
+                                        All Events
+                                    </h3>
+                                    <div className="text-gray-500 text-sm">
+                                        {totalEvents} total events
+                                    </div>
+                                </div>
+
+                                {/* Search and Filters */}
+                                <div className="flex sm:flex-row flex-col gap-4 mt-4">
+                                    {/* Search Input */}
+                                    <div className="flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Search events..."
+                                            value={eventFilters.search}
+                                            onChange={(e) =>
+                                                handleSearchChange(
+                                                    e.target.value,
+                                                )}
+                                            className="input-field"
+                                        />
+                                    </div>
+
+                                    {/* Sort Dropdown */}
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={eventFilters.sortBy}
+                                            onChange={(e) =>
+                                                handleSortChange(
+                                                    e.target.value as
+                                                        | "title"
+                                                        | "created_at"
+                                                        | "start_time",
+                                                )}
+                                            className="input-field"
+                                        >
+                                            <option value="created_at">
+                                                Sort by Created
+                                            </option>
+                                            <option value="title">
+                                                Sort by Name
+                                            </option>
+                                            <option value="start_time">
+                                                Sort by Start Date
+                                            </option>
+                                        </select>
+
+                                        <button
+                                            onClick={() =>
+                                                setEventFilters((prev) => ({
+                                                    ...prev,
+                                                    sortOrder:
+                                                        prev.sortOrder === "asc"
+                                                            ? "desc"
+                                                            : "asc",
+                                                }))}
+                                            className="hover:bg-gray-50 px-3 py-2 border border-gray-300 rounded-md transition-colors"
+                                            title={`Sort ${
+                                                eventFilters.sortOrder === "asc"
+                                                    ? "Descending"
+                                                    : "Ascending"
+                                            }`}
+                                        >
+                                            {eventFilters.sortOrder === "asc"
+                                                ? "↑"
+                                                : "↓"}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="divide-y divide-gray-300">
-                                {recentEvents.map((event) => (
-                                    <div
-                                        key={event.id}
-                                        className="hover:bg-gray-50 px-6 py-4 transition-colors duration-200"
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-3">
-                                                    <h4 className="font-semibold text-black">
-                                                        {event.title}
-                                                    </h4>
-                                                    <span
-                                                        className={`px-2 py-1 text-xs font-medium uppercase tracking-wide rounded ${
-                                                            getStatusColor(
-                                                                event.status,
-                                                            )
-                                                        }`}
-                                                    >
-                                                        {event.status}
-                                                    </span>
-                                                </div>
-                                                <p className="mt-1 text-gray-600 text-sm line-clamp-2">
-                                                    {event.description}
-                                                </p>
-                                                <div className="flex items-center space-x-4 mt-2 text-gray-500 text-sm">
-                                                    <span>
-                                                        📅 {formatDate(
-                                                            event.start_time,
-                                                        )}
-                                                    </span>
-                                                    <span>
-                                                        📍 {event.location}
-                                                    </span>
-                                                    <span>
-                                                        🎫{" "}
-                                                        {event.available_seats}
-                                                        {" "}
-                                                        / {event.total_seats}
-                                                        {" "}
-                                                        available
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <Link
-                                                    to={`/events/${event.slug}`}
-                                                    className="text-sm btn-secondary"
-                                                >
-                                                    View
-                                                </Link>
-                                                <button className="text-sm btn-primary">
-                                                    Edit
-                                                </button>
-                                            </div>
+
+                            <div className="bg-yellow-50 p-4 border-b">
+                                <div className="text-sm">
+                                    Debug: eventsLoading={String(
+                                        eventsLoading,
+                                    )}, allEvents.length={allEvents.length},
+                                    totalEvents={totalEvents}
+                                </div>
+                            </div>
+                            {eventsLoading
+                                ? (
+                                    <div className="p-8 text-center">
+                                        <div className="text-gray-500">
+                                            Loading events...
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                )
+                                : allEvents.length === 0
+                                ? (
+                                    <div className="p-8 text-center">
+                                        <div className="text-gray-500">
+                                            No events found
+                                        </div>
+                                        <div className="mt-2 text-gray-400 text-xs">
+                                            totalEvents:{" "}
+                                            {totalEvents}, eventsLoading:{" "}
+                                            {String(eventsLoading)}
+                                        </div>
+                                    </div>
+                                )
+                                : (
+                                    <div className="divide-y divide-gray-300">
+                                        {allEvents.map((event) => (
+                                            <div
+                                                key={event.id}
+                                                className="hover:bg-gray-50 px-6 py-4 transition-colors duration-200"
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-3">
+                                                            <h4 className="font-semibold text-black">
+                                                                {event.title}
+                                                            </h4>
+                                                            <span
+                                                                className={`px-2 py-1 text-xs font-medium uppercase tracking-wide rounded ${
+                                                                    getStatusColor(
+                                                                        event
+                                                                            .status,
+                                                                    )
+                                                                }`}
+                                                            >
+                                                                {event.status}
+                                                            </span>
+                                                        </div>
+                                                        <p className="mt-1 text-gray-600 text-sm line-clamp-2">
+                                                            {event.description}
+                                                        </p>
+                                                        <div className="flex items-center space-x-4 mt-2 text-gray-500 text-sm">
+                                                            <span>
+                                                                📅 {formatDate(
+                                                                    event
+                                                                        .start_time,
+                                                                )}
+                                                            </span>
+                                                            <span>
+                                                                📍{" "}
+                                                                {event.location}
+                                                            </span>
+                                                            <span>
+                                                                🎫 {event
+                                                                    .available_seats}
+                                                                {" "}
+                                                                / {event
+                                                                    .total_seats}
+                                                                {" "}
+                                                                available
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex space-x-2">
+                                                        <Link
+                                                            to={`/events/${event.slug}`}
+                                                            className="text-sm btn-secondary"
+                                                        >
+                                                            View
+                                                        </Link>
+                                                        <Link
+                                                            to={`/edit-event/${event.slug}`}
+                                                            className="text-sm btn-primary"
+                                                        >
+                                                            Edit
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                            {/* Pagination */}
+                            {!eventsLoading && allEvents.length > 0 &&
+                                getTotalPages() > 1 && (
+                                <div className="bg-gray-50 px-6 py-4 border-t">
+                                    <div className="flex justify-between items-center">
+                                        <div className="text-gray-600 text-sm">
+                                            Showing {((eventFilters.page - 1) *
+                                                eventFilters.limit) + 1} to{" "}
+                                            {Math.min(
+                                                eventFilters.page *
+                                                    eventFilters.limit,
+                                                totalEvents,
+                                            )} of {totalEvents} events
+                                        </div>
+
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        eventFilters.page - 1,
+                                                    )}
+                                                disabled={eventFilters.page ===
+                                                    1}
+                                                className="hover:bg-white disabled:opacity-50 px-3 py-1 border border-gray-300 rounded transition-colors disabled:cursor-not-allowed"
+                                            >
+                                                Previous
+                                            </button>
+
+                                            {Array.from({
+                                                length: getTotalPages(),
+                                            }, (_, i) => i + 1).map((page) => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() =>
+                                                        handlePageChange(page)}
+                                                    className={`px-3 py-1 border border-gray-300 rounded transition-colors ${
+                                                        page ===
+                                                                eventFilters
+                                                                    .page
+                                                            ? "bg-black text-white border-black"
+                                                            : "hover:bg-white"
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+
+                                            <button
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        eventFilters.page + 1,
+                                                    )}
+                                                disabled={eventFilters.page ===
+                                                    getTotalPages()}
+                                                className="hover:bg-white disabled:opacity-50 px-3 py-1 border border-gray-300 rounded transition-colors disabled:cursor-not-allowed"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

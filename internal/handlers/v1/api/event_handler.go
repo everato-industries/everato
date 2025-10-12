@@ -99,8 +99,12 @@ func (h *EventHandler) RegisterRoutes(router *mux.Router) {
 	protected.Use(guard.Guard) // Guard the protected route group
 
 	// Register protected route handlers (admin only)
-	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost) // Create a new event
-	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)  // Update an existing event
+	protected.HandleFunc("/create", h.CreateEvent).Methods(http.MethodPost)         // Create a new event
+	protected.HandleFunc("/update", h.UpdateEvent).Methods(http.MethodPut)          // Update an existing event (legacy)
+	protected.HandleFunc("/{slug}", h.UpdateEventBySlug).Methods(http.MethodPut)    // Update event by slug
+	protected.HandleFunc("/{slug}", h.DeleteEventBySlug).Methods(http.MethodDelete) // Delete event by slug
+	protected.HandleFunc("/{slug}/start", h.StartEvent).Methods(http.MethodPost)    // Start event (publish)
+	protected.HandleFunc("/{slug}/end", h.EndEvent).Methods(http.MethodPost)        // End event
 }
 
 // CreateEvent handles requests to create a new event in the system.
@@ -246,4 +250,161 @@ func (h *EventHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event.GetEventBySlug(wr, h.Repo, h.Conn)
+}
+
+// UpdateEventBySlug handles requests to update an existing event by its slug.
+// It validates the request and delegates the update logic to the event service.
+//
+// HTTP Method: PUT
+// Route: /api/v1/events/{slug}
+//
+// Path Parameters:
+//   - slug: The unique slug identifier for the event
+//
+// Request: JSON with fields to update
+// Response:
+//   - 200 OK with updated event details on success
+//   - 400 Bad Request if validation fails or slug is missing
+//   - 401 Unauthorized if user is not authenticated
+//   - 403 Forbidden if user doesn't have permission to update the event
+//   - 404 Not Found if event doesn't exist
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) UpdateEventBySlug(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// TODO: Implement event update by slug functionality
+	// For now, return not implemented
+	wr.Status(http.StatusNotImplemented).Json(
+		utils.M{
+			"message": "Event update by slug not yet implemented",
+			"error":   "This endpoint is currently under development",
+		},
+	)
+}
+
+// DeleteEventBySlug handles requests to delete an event by its slug.
+// It validates the request and delegates the deletion logic to the event service.
+//
+// HTTP Method: DELETE
+// Route: /api/v1/events/{slug}
+//
+// Path Parameters:
+//   - slug: The unique slug identifier for the event
+//
+// Response:
+//   - 200 OK with success message on deletion
+//   - 400 Bad Request if slug is missing or invalid
+//   - 401 Unauthorized if user is not authenticated
+//   - 403 Forbidden if user doesn't have permission to delete the event
+//   - 404 Not Found if event doesn't exist
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) DeleteEventBySlug(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// TODO: Implement event deletion by slug functionality
+	// For now, return not implemented
+	wr.Status(http.StatusNotImplemented).Json(
+		utils.M{
+			"message": "Event deletion by slug not yet implemented",
+			"error":   "This endpoint is currently under development",
+		},
+	)
+}
+
+// StartEvent handles requests to start (publish) an event by its slug.
+// This changes the event status to 'published' making it visible to users.
+//
+// HTTP Method: POST
+// Route: /api/v1/events/{slug}/start
+//
+// Path Parameters:
+//   - slug: The unique slug identifier for the event
+//
+// Response:
+//   - 200 OK with updated event status on success
+//   - 400 Bad Request if slug is missing or event is already started
+//   - 401 Unauthorized if user is not authenticated
+//   - 403 Forbidden if user doesn't have permission to start the event
+//   - 404 Not Found if event doesn't exist
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) StartEvent(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// TODO: Implement event start functionality
+	// For now, return not implemented
+	wr.Status(http.StatusNotImplemented).Json(
+		utils.M{
+			"message": "Event start not yet implemented",
+			"error":   "This endpoint is currently under development",
+		},
+	)
+}
+
+// EndEvent handles requests to end an event by its slug.
+// This changes the event status to 'ended' and stops further ticket sales.
+//
+// HTTP Method: POST
+// Route: /api/v1/events/{slug}/end
+//
+// Path Parameters:
+//   - slug: The unique slug identifier for the event
+//
+// Response:
+//   - 200 OK with updated event status on success
+//   - 400 Bad Request if slug is missing or event is already ended
+//   - 401 Unauthorized if user is not authenticated
+//   - 403 Forbidden if user doesn't have permission to end the event
+//   - 404 Not Found if event doesn't exist
+//   - 502 Bad Gateway if database connection fails
+func (h *EventHandler) EndEvent(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// TODO: Implement event end functionality
+	// For now, return not implemented
+	wr.Status(http.StatusNotImplemented).Json(
+		utils.M{
+			"message": "Event end not yet implemented",
+			"error":   "This endpoint is currently under development",
+		},
+	)
 }

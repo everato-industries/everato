@@ -7,6 +7,7 @@ import EventDetailPage from "./pages/event-detail";
 import DashboardPage from "./pages/dashboard";
 import AdminPage from "./pages/admin";
 import CreateEventPage from "./pages/create-event";
+import EditEventPage from "./pages/edit-event";
 import ProtectedRoute from "./components/protected-route";
 
 export default function AppRoutes() {
@@ -27,6 +28,14 @@ export default function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <CreateEventPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/edit-event/:slug"
+                element={
+                    <ProtectedRoute>
+                        <EditEventPage />
                     </ProtectedRoute>
                 }
             />
