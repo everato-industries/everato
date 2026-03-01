@@ -42,8 +42,7 @@ func SuperUserInit(cfg *config.Config) error {
 		hashedPassword, err := utils.BcryptHash(su.Password)
 		if err != nil {
 			logger.StdoutLogger.Error("Error hashing password", "err", err.Error(), "email", su.Email)
-			tx.Rollback(context.Background())
-			return err
+			return tx.Rollback(context.Background())
 		}
 
 		u, err := repo.WithTx(tx).CreateSuperUserIfNotExists(
