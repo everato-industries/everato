@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import api from "../../lib/api";
 import Layout from "../../components/layout";
+import { useAuth } from "../../hooks/useAuth";
 
 interface LoginFormData {
     email: string;
@@ -10,13 +10,20 @@ interface LoginFormData {
 }
 
 export default function LoginPage() {
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Redirect to the page the user originally wanted, or /dashboard
+    const from = (location.state as { from?: { pathname: string } })?.from
+        ?.pathname ?? "/dashboard";
+
     const [formData, setFormData] = useState<LoginFormData>({
         email: "",
         password: "",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -24,7 +31,6 @@ export default function LoginPage() {
             ...prev,
             [name]: value,
         }));
-        // Clear error when user starts typing
         if (error) setError(null);
     };
 
@@ -34,21 +40,15 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const response = await api.post("/auth/login", formData);
-            const data = response.data;
-
-            // Store token and user info
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-                // Redirect to dashboard or home page
-                navigate("/dashboard");
-            } else {
-                throw new Error("No token received");
-            }
+            await login(formData.email, formData.password);
+            navigate(from, { replace: true });
         } catch (err) {
-            let errorMessage = "An error occurred during login";
+            let errorMessage = "Invalid email or password";
             if (axios.isAxiosError(err)) {
-                errorMessage = err.response?.data?.message || err.message;
+                errorMessage =
+                    err.response?.data?.message ??
+                    err.response?.data?.error ??
+                    err.message;
             } else if (err instanceof Error) {
                 errorMessage = err.message;
             }

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Your Ticket for {{ .EventTitle }}</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                line-height: 1.6;
+                margin: 0;
+                padding: 0;
+                background-color: #f8fafc;
+                color: #1e293b;
+            }
+            .container {
+                max-width: 600px;
+                margin: 20px auto;
+                background: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                background: #0f172a;
+                color: #ffffff;
+                padding: 32px 24px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0 0 8px 0;
+                font-size: 24px;
+            }
+            .content {
+                padding: 28px 24px;
+            }
+            .ticket-card {
+                background: #f1f5f9;
+                border: 2px dashed #cbd5e1;
+                border-radius: 8px;
+                padding: 24px;
+                margin: 20px 0;
+                text-align: center;
+            }
+            .ticket-number {
+                font-family: monospace;
+                font-size: 18px;
+                font-weight: 700;
+                color: #3b82f6;
+                letter-spacing: 1px;
+                margin-bottom: 16px;
+            }
+            .qr-code {
+                display: block;
+                margin: 0 auto 16px auto;
+                max-width: 220px;
+                height: auto;
+                border-radius: 8px;
+                background: #ffffff;
+                padding: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .event-meta {
+                margin: 16px 0;
+                border-top: 1px solid #e2e8f0;
+                padding-top: 16px;
+                text-align: left;
+            }
+            .event-meta-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+            .event-meta-label {
+                color: #64748b;
+            }
+            .event-meta-val {
+                font-weight: 600;
+                color: #0f172a;
+            }
+            .footer {
+                background: #f8fafc;
+                padding: 20px 24px;
+                text-align: center;
+                font-size: 12px;
+                color: #94a3b8;
+                border-top: 1px solid #e2e8f0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Your Event Ticket</h1>
+                <p style="margin: 0; opacity: 0.85;">Present this QR code at the entrance</p>
+            </div>
+            <div class="content">
+                <p>Hello <strong>{{ .AttendeeName }}</strong>,</p>
+                <p>Your ticket for <strong>{{ .EventTitle }}</strong> is confirmed! Here are your ticket details:</p>
+
+                <div class="ticket-card">
+                    <div class="ticket-number">{{ .TicketNumber }}</div>
+                    {{ if .QRCodeDataURL }}
+                    <img src="{{ .QRCodeDataURL }}" alt="QR Code Ticket" class="qr-code" />
+                    {{ end }}
+                    <div class="event-meta">
+                        <div class="event-meta-row">
+                            <span class="event-meta-label">Event:</span>
+                            <span class="event-meta-val">{{ .EventTitle }}</span>
+                        </div>
+                        <div class="event-meta-row">
+                            <span class="event-meta-label">Ticket Type:</span>
+                            <span class="event-meta-val">{{ .TicketType }}</span>
+                        </div>
+                        <div class="event-meta-row">
+                            <span class="event-meta-label">Date & Time:</span>
+                            <span class="event-meta-val">{{ .StartTime }}</span>
+                        </div>
+                        <div class="event-meta-row">
+                            <span class="event-meta-label">Location:</span>
+                            <span class="event-meta-val">{{ .Location }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: #64748b;">
+                    Tip: You can also access this ticket anytime by logging in to your Everato account and visiting <strong>My Tickets</strong>.
+                </p>
+            </div>
+            <div class="footer">
+                <p>Sent by Everato Event Management Platform</p>
+            </div>
+        </div>
+    </body>
+</html>

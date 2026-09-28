@@ -16,6 +16,9 @@ database:
     password: root_access
     name: everato
 logging: true
+payment:
+    provider: razorpay # options: razorpay, stripe, cashfree
+    currency: INR
 super_users:
     - name: Piush Bose
       username: admin

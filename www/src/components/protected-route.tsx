@@ -1,25 +1,25 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { isAuthenticated } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
+    /** Where to redirect unauthenticated users. Defaults to the user login page. */
     redirectTo?: string;
 }
 
 /**
- * ProtectedRoute component that requires admin authentication
- * Redirects to admin login page if user is not authenticated
+ * ProtectedRoute — guards routes that require a logged-in (non-admin) user.
+ * Saves the original location so login can redirect back after success.
  */
 export default function ProtectedRoute({
     children,
-    redirectTo = "/admin",
+    redirectTo = "/auth/login",
 }: ProtectedRouteProps) {
+    const { isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (!isAuthenticated()) {
-        // Redirect to login page with the current location as state
-        // so we can redirect back after successful login
+    if (!isAuthenticated) {
         return (
             <Navigate
                 to={redirectTo}

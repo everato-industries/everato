@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Layout from "../components/layout";
 import api from "../lib/api";
-import { isAuthenticated } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 
 interface TicketType {
     id: string;
@@ -107,6 +107,7 @@ interface TicketSelection {
 
 export default function EventDetailPage() {
     const { slug } = useParams<{ slug: string }>();
+    const { isAuthenticated } = useAuth();
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [ticketSelection, setTicketSelection] = useState<TicketSelection>({
@@ -607,7 +608,7 @@ export default function EventDetailPage() {
                             )}
 
                             {/* Coupons - Admin Only */}
-                            {isAuthenticated() && event.coupons &&
+                            {isAuthenticated && event.coupons &&
                                 event.coupons.length > 0 && (
                                 <div className="mb-8">
                                     <h3 className="mb-4 font-bold text-black text-2xl">

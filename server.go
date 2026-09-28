@@ -103,10 +103,25 @@ func (s *Server) initializeRoutes() {
 	// Dashboard statistics and analytics
 	api.NewDashboardHandler(s.Cfg).RegisterRoutes(apivx)
 
+	// Route Group: Bookings
+	// Booking creation, management, and availability checking
+	api.NewBookingHandler(s.Cfg).RegisterRoutes(apivx)
+
+	// Route Group: Tickets
+	// Ticket management and QR code retrieval
+	api.NewTicketHandler(s.Cfg).RegisterRoutes(apivx)
+
+	// Route Group: Check-in / Attendance
+	// QR code scanning, validation, and attendance analytics
+	api.NewCheckinHandler(s.Cfg).RegisterRoutes(apivx)
+
+	// Route Group: Payments
+	// Multi-provider payments (Razorpay, Stripe, Cashfree)
+	api.NewPaymentHandler(s.Cfg).RegisterRoutes(apivx)
+
 	// --------------------------------------------------------------
 	// @TODO: User routes - User profile, management, etc.
 	// --------------------------------------------------------------
-	// @TODO: Ticket routes - Ticket creation, validation, etc.
 	// @TODO: Notification routes - Email/push notifications, etc.
 
 	// Register the NotFound handler for unmatched routes

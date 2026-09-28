@@ -144,6 +144,52 @@ make migrate-down
 make seed
 ```
 
+## Payment Gateway Configuration
+
+Everato features a multi-provider payment architecture. You can switch between **Razorpay**, **Stripe**, and **Cashfree** with zero code changes.
+
+### 1. Select Provider in `config.yaml` or `.env`
+
+In `config.yaml`:
+```yaml
+payment:
+    provider: razorpay # options: razorpay, stripe, cashfree
+    currency: INR
+```
+
+Or in your `.env` file:
+```bash
+PAYMENT_PROVIDER=razorpay
+PAYMENT_CURRENCY=INR
+```
+
+### 2. Configure Gateway Credentials
+
+Based on the chosen provider, provide the corresponding keys in `.env`:
+
+- **Razorpay**:
+  ```bash
+  RAZORPAY_KEY_ID=rzp_test_...
+  RAZORPAY_KEY_SECRET=...
+  RAZORPAY_WEBHOOK_SECRET=...
+  ```
+- **Stripe**:
+  ```bash
+  STRIPE_SECRET_KEY=sk_test_...
+  STRIPE_PUBLISHABLE_KEY=pk_test_...
+  STRIPE_WEBHOOK_SECRET=whsec_...
+  ```
+- **Cashfree**:
+  ```bash
+  CASHFREE_APP_ID=...
+  CASHFREE_SECRET_KEY=...
+  CASHFREE_ENV=TEST # Options: TEST or PRODUCTION
+  ```
+
+*Free events (or instances without payment credentials) automatically bypass checkout and issue confirmed tickets directly.*
+
+> 📖 **Developer Guide:** For step-by-step instructions on obtaining API keys, configuring webhooks, testing locally with ngrok, and activating live payouts, see the [Payment Setup & Self-Hosting Guide](docs/PAYMENT_SETUP_GUIDE.md).
+
 ## Project Structure
 
 Everato follows a well-organized directory structure that separates concerns and promotes maintainability:

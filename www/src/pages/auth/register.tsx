@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import api from "../../lib/api";
 import Layout from "../../components/layout";
+import { useAuth } from "../../hooks/useAuth";
 
 interface RegisterFormData {
     firstName: string;
@@ -13,6 +13,9 @@ interface RegisterFormData {
 }
 
 export default function RegisterPage() {
+    const { register } = useAuth();
+    const navigate = useNavigate();
+
     const [formData, setFormData] = useState<RegisterFormData>({
         firstName: "",
         lastName: "",
@@ -23,7 +26,6 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const navigate = useNavigate();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -31,7 +33,6 @@ export default function RegisterPage() {
             ...prev,
             [name]: value,
         }));
-        // Clear error when user starts typing
         if (error) setError(null);
     };
 
@@ -58,7 +59,7 @@ export default function RegisterPage() {
         }
 
         try {
-            await api.post("/auth/register", {
+            await register({
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 email: formData.email,
@@ -72,7 +73,10 @@ export default function RegisterPage() {
         } catch (err) {
             let errorMessage = "An error occurred during registration";
             if (axios.isAxiosError(err)) {
-                errorMessage = err.response?.data?.message || err.message;
+                errorMessage =
+                    err.response?.data?.message ??
+                    err.response?.data?.error ??
+                    err.message;
             } else if (err instanceof Error) {
                 errorMessage = err.message;
             }

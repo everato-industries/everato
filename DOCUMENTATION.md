@@ -197,6 +197,20 @@ Everato leverages a carefully selected technology stack that balances performanc
   - Log levels and filtering
   - Request tracing support
 
+#### Multi-Provider Payment Processing
+- **Pluggable Payment Gateway Architecture**:
+  - **Razorpay**: Native orders API (`orders.create`), client-side Razorpay Checkout, and HMAC-SHA256 signature verification
+  - **Stripe**: PaymentIntent creation, client secrets for Stripe Elements, and webhook verification
+  - **Cashfree PG**: Seamless order creation with payment sessions, sandbox (`TEST`) and `PRODUCTION` modes
+  - **Dynamic Provider Selection**: Configurable at runtime via `config.yaml` (`payment.provider`) or `PAYMENT_PROVIDER` environment variable
+  - **Credential Validation**: Validates required environment variables for the selected gateway at startup with actionable error messages
+
+#### Ticketing & Cryptographic Check-in
+- **skip2/go-qrcode**: High-speed QR code generation directly in Go
+- **Cryptographic Security**: HMAC-SHA256 digital signature over canonical ticket payload (`tid|bid|eid|uid|num|iat`) preventing forgery
+- **Audit Logging**: Real-time attendance tracking recording scanner device info, gate location, and timestamp
+- **Double Check-in Prevention**: Atomic database transactions rejecting duplicate entry scans (HTTP 409 Conflict)
+
 #### Additional Libraries
 - **UUID Generation**: google/uuid for unique identifiers
 - **Configuration Management**: YAML-based configuration with gopkg.in/yaml.v2
@@ -741,12 +755,86 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 }
 ```
 
-**Benefits**:
-- Compile-time SQL validation (errors caught before runtime)
-- Full type safety (no `interface{}` or reflection)
-- No ORM overhead - direct SQL performance
-- IDE autocomplete for database operations
-- Impossible to have SQL injection vulnerabilities
+#### 4.2.6 Multi-Provider Payment Gateway Integration
+
+Everato provides a unified `PaymentGateway` interface allowing organizations to switch seamlessly between **Razorpay**, **Stripe**, and **Cashfree** with zero code modifications:
+
+```go
+type PaymentGateway interface {
+    GetProvider() ProviderType
+    CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error)
+    VerifyPayment(ctx context.Context, req VerifyPaymentRequest) (*VerifyPaymentResponse, error)
+    HandleWebhook(ctx context.Context, body []byte, signature string) (*WebhookEvent, error)
+    GetClientConfig() map[string]string
+}
+```
+
+**Provider Selection & Dynamic Validation**:
+```go
+func NewPaymentGateway(cfg *config.Config) (PaymentGateway, error) {
+    provider := cfg.Payment.Provider // "razorpay" | "stripe" | "cashfree"
+    switch ProviderType(provider) {
+    case ProviderRazorpay:
+        return NewRazorpayProvider(cfg.Payment.Currency) // Enforces RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET
+    case ProviderStripe:
+        return NewStripeProvider(cfg.Payment.Currency)   // Enforces STRIPE_SECRET_KEY & STRIPE_PUBLISHABLE_KEY
+    case ProviderCashfree:
+        return NewCashfreeProvider(cfg.Payment.Currency) // Enforces CASHFREE_APP_ID & CASHFREE_SECRET_KEY
+    default:
+        return nil, fmt.Errorf("unsupported provider: %s", provider)
+    }
+}
+```
+
+> **Detailed Self-Hosting Guide**: For complete end-to-end instructions on what developers must do after selecting their payment provider—including obtaining keys, configuring webhooks, local ngrok testing, and live KYC/payouts—see the [Payment Setup & Self-Hosting Guide](file:///home/piush/Prog/proj/everato/docs/PAYMENT_SETUP_GUIDE.md).
+
+
+#### 4.2.7 Cryptographic QR Ticketing & Check-in Service
+
+Tickets are generated with HMAC-SHA256 signatures over their canonical payload, preventing forgery or offline manipulation:
+
+```go
+func BuildSignedQRData(ticketID, bookingID, eventID, userID, ticketNum, secret string) (string, error) {
+    payload := QRPayload{
+        TicketID:  ticketID,
+        BookingID: bookingID,
+        EventID:   eventID,
+        UserID:    userID,
+        TicketNum: ticketNum,
+        IssuedAt:  time.Now().Unix(),
+    }
+    payload.Sig = signPayload(payload, secret) // HMAC-SHA256(tid|bid|eid|uid|num|iat)
+    return json.Marshal(payload)
+}
+```
+
+**Atomic Gate Check-in & Double-Entry Prevention**:
+```go
+// checkin_service.go
+func ValidateAndCheckin(wr *utils.HttpWriter, repo *repository.Queries, conn *pgx.Conn, secret string) {
+    // 1. Verify HMAC signature cryptographically
+    payload, err := ticket.VerifyQRData(dto.QRData, secret)
+    if err != nil {
+        wr.Status(422).Json(utils.M{"error": "Invalid or forged QR code"})
+        return
+    }
+
+    // 2. Lookup ticket in PostgreSQL
+    t, _ := repo.GetTicketByQRData(ctx, dto.QRData)
+
+    // 3. Reject duplicate scans
+    if t.IsCheckedIn {
+        wr.Status(409).Json(utils.M{
+            "error": "Ticket already checked in",
+            "checked_in_at": t.CheckedInAt,
+        })
+        return
+    }
+
+    // 4. Mark checked in & write attendance audit record in single transaction
+    ...
+}
+```
 
 ### 4.3 Architecture Highlights
 
@@ -755,70 +843,116 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 ```
 everato/
 ├── main.go                 # Entry point
-├── server.go              # HTTP server setup
+├── server.go              # HTTP server setup & route mounting
 ├── embedded_fs.go         # Binary embedding
 ├── config/                # Configuration management
 ├── internal/
-│   ├── handlers/          # HTTP request handlers
-│   ├── services/          # Business logic layer
-│   ├── middlewares/       # HTTP middlewares
+│   ├── handlers/v1/api/   # HTTP request handlers (Events, Bookings, Tickets, Checkin, Payments)
+│   ├── services/          # Domain services (payment, ticket, checkin, booking, event, user)
+│   ├── middlewares/       # HTTP middlewares (AuthGuard, AdminMiddleware, CORS, Logger)
 │   ├── db/
-│   │   ├── migrations/    # SQL schema migrations
+│   │   ├── migrations/    # Versioned SQL migrations (000001 - 000014)
 │   │   ├── queries/       # SQL queries for SQLC
-│   │   └── repository/    # Generated type-safe code
+│   │   └── repository/    # Generated type-safe Go code
 │   └── utils/             # Helper utilities
-├── pkg/                   # Reusable packages
-└── www/                   # Frontend application
-    ├── src/               # React source code
-    ├── public/            # Static assets
-    └── dist/              # Production build (embedded)
+├── pkg/                   # Reusable packages (logger, jwt, template)
+└── www/                   # React 19 + TypeScript + Vite frontend
+    ├── src/               # React components, pages, contexts, hooks
+    └── dist/              # Production build (embedded into binary)
 ```
 
 #### Request Flow
 
 1. **HTTP Request** → Server receives request
-2. **Middleware Chain** → Request ID, CORS, Logger, Auth
+2. **Middleware Chain** → Request ID, CORS, Logger, Auth/Admin Guards
 3. **Router** → Gorilla Mux routes to appropriate handler
 4. **Handler** → Extracts and validates request data
-5. **Service Layer** → Executes business logic
+5. **Service Layer** → Executes business logic (Payments, QR validation, etc.)
 6. **Repository** → Type-safe database operations (SQLC)
-7. **Response** → JSON or HTML response returned
+7. **Response** → JSON or embedded static assets returned
 
 ---
 
-## 5. Conclusion
+## 5. Current State & Roadmap
 
-Everato represents a paradigm shift in event management platform design. By combining modern technologies with an innovative single-binary distribution model, it delivers enterprise-grade functionality without enterprise-grade complexity.
+### Current State
 
-### Current State and Roadmap
-
-While Everato is actively under development, it already demonstrates the viability and advantages of its core architectural principles. The current implementation includes:
+Everato has successfully completed its core MVP architecture:
 
 ✅ **Completed Features**:
-- Single binary compilation with embedded frontend and assets
-- Complete event management CRUD operations
-- User authentication and authorization with JWT
-- Admin dashboard with role-based access control
-- Database migrations and seeding
-- RESTful API design
-- Type-safe database operations with SQLC
-- Middleware architecture for cross-cutting concerns
-- Structured logging and observability hooks
-
-🚧 **In Progress**:
-- Ticketing system with inventory management
-- Payment gateway integration
-- QR code generation and validation
-- Email notification system
-- Analytics dashboard
-- Advanced search and filtering
+- Single binary compilation with embedded React frontend and static assets
+- Complete event management CRUD operations (publish, unpublish, capacity tracking)
+- User authentication, JWT sessions, and role-based admin controls (RBAC)
+- Multi-tier ticketing system with inventory management and seat availability
+- **Multi-Gateway Payment Integration**: Pluggable support for **Razorpay**, **Stripe**, and **Cashfree** with runtime provider validation
+- **Cryptographic QR Ticketing**: HMAC-SHA256 signature verification and Base64 PNG image rendering
+- **Gate Check-in Station**: Admin scanner interface, double-entry prevention, and real-time attendance analytics
+- Automated HTML email templates (admission passes, booking confirmations, payment receipts)
+- Real-time Prometheus metrics, Grafana dashboards, and structured logging
+- Type-safe database operations with SQLC and versioned migrations (000001 - 000014)
 
 🎯 **Planned Features**:
-- Cloud-hosted managed service offering
-- Plugin architecture for extensibility
-- Multi-language support (i18n)
-- Mobile application (React Native)
-- Webhooks for third-party integrations
+- Managed cloud hosting option for zero-ops deployments
+- Offline-first progressive web app (PWA) gate scanner for mobile devices
+- Multi-currency automatic conversion
+- Webhook notifications for third-party integrations (Zapier, Slack)
+- Multi-language localization (i18n)
+
+---
+
+## 6. REST API Reference
+
+All API routes are prefixed with `/api/v1`.
+
+### 6.1 Authentication (`/auth`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/auth/register` | Register a new user account | No |
+| `POST` | `/auth/login` | Authenticate and receive JWT cookie & token | No |
+| `POST` | `/auth/refresh` | Refresh access token | No |
+| `GET`  | `/auth/verify` | Verify user email token | No |
+
+### 6.2 Events (`/events`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET`  | `/events/all` | List events with pagination and filtering | No |
+| `GET`  | `/events/recent` | Get upcoming featured events | No |
+| `GET`  | `/events/{slug}` | Get full event details by slug | No |
+| `POST` | `/events/create` | Create a new event | Admin |
+| `PUT`  | `/events/{slug}` | Update event details | Admin |
+| `DELETE`| `/events/{slug}` | Soft delete event | Admin |
+| `POST` | `/events/{slug}/start` | Publish event | Admin |
+| `POST` | `/events/{slug}/end` | End event | Admin |
+| `GET`  | `/events/{eventId}/availability` | Real-time seat availability | No |
+
+### 6.3 Bookings (`/bookings`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/bookings/create` | Create a booking with ticket reservation | User |
+| `GET`  | `/bookings/user/{userId}` | Get all bookings for user | User |
+| `GET`  | `/bookings/{bookingId}` | Get booking details & line items | User |
+| `DELETE`| `/bookings/{bookingId}` | Cancel booking | User |
+
+### 6.4 Tickets (`/tickets`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET`  | `/tickets/booking/{bookingID}` | Get all tickets & QR passes for a booking | User |
+| `GET`  | `/tickets/{ticketID}` | Get single ticket with QR image | User |
+
+### 6.5 Check-in & Attendance (`/checkin`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/checkin/scan` | Scan & validate QR code, mark attendance | Admin |
+| `GET`  | `/checkin/events/{eventID}/stats` | Real-time attendance stats | Admin |
+| `GET`  | `/checkin/events/{eventID}/attendees`| Full attendee roster & check-in timestamps | Admin |
+
+### 6.6 Payments (`/payments`)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET`  | `/payments/config` | Get active provider (`razorpay`/`stripe`/`cashfree`) & public keys | No |
+| `POST` | `/payments/create-order` | Create order / PaymentIntent for booking | User |
+| `POST` | `/payments/verify` | Verify payment signature and confirm booking | User |
+| `POST` | `/payments/webhook` | Asynchronous provider webhook handler | No |
 - Social media integration
 - Calendar synchronization
 - Advanced reporting and analytics

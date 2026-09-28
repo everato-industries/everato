@@ -8,6 +8,8 @@ import DashboardPage from "./pages/dashboard";
 import AdminPage from "./pages/admin";
 import CreateEventPage from "./pages/create-event";
 import EditEventPage from "./pages/edit-event";
+import BookingPage from "./pages/booking";
+import MyTicketsPage from "./pages/my-tickets";
 import ProtectedRoute from "./components/protected-route";
 
 export default function AppRoutes() {
@@ -20,6 +22,24 @@ export default function AppRoutes() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/auth/register" element={<RegisterPage />} />
+
+            {/* Protected user routes */}
+            <Route
+                path="/events/:slug/book"
+                element={
+                    <ProtectedRoute>
+                        <BookingPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/my-tickets"
+                element={
+                    <ProtectedRoute>
+                        <MyTicketsPage />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Admin routes - protected */}
             <Route path="/admin" element={<AdminPage />} />

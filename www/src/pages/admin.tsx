@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/layout";
+import CheckinSection from "../components/checkin-section";
 import api, { type Event, eventAPI } from "../lib/api";
 import {
     type AuthResponse,
@@ -126,7 +127,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 // Admin Dashboard Component
 function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<
-        "dashboard" | "events" | "settings"
+        "dashboard" | "events" | "checkin" | "settings"
     >("dashboard");
     const [stats, setStats] = useState<DashboardStats>({
         totalEvents: 0,
@@ -323,6 +324,7 @@ function AdminDashboard() {
                         {[
                             { id: "dashboard", label: "Dashboard", icon: "📊" },
                             { id: "events", label: "Events", icon: "🎫" },
+                            { id: "checkin", label: "Check-in & Scanner", icon: "📱" },
                             { id: "settings", label: "Settings", icon: "⚙️" },
                         ].map((tab) => (
                             <button
@@ -332,6 +334,7 @@ function AdminDashboard() {
                                         tab.id as
                                             | "dashboard"
                                             | "events"
+                                            | "checkin"
                                             | "settings",
                                     )}
                                 className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -750,6 +753,10 @@ function AdminDashboard() {
                             )}
                         </div>
                     </div>
+                )}
+
+                {activeTab === "checkin" && (
+                    <CheckinSection />
                 )}
 
                 {activeTab === "settings" && (

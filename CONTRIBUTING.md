@@ -1,260 +1,270 @@
 # Contributing to Everato
 
-Thank you for considering contributing to Everato! This document provides guidelines and instructions to help you contribute effectively to this project.
-
-## Table of Contents
-
-1. [Development Environment Setup](#development-environment-setup)
-2. [Code Style and Standards](#code-style-and-standards)
-3. [Branch Naming Conventions](#branch-naming-conventions)
-4. [Commit Message Guidelines](#commit-message-guidelines)
-5. [Pull Request Process](#pull-request-process)
-6. [Reporting Bugs](#reporting-bugs)
-7. [Feature Requests](#feature-requests)
-8. [Testing](#testing)
-9. [Project Structure](#project-structure)
-10. [Communication](#communication)
-
-## Development Environment Setup
-
-> 💡 **Tip:** Keep a lookout for the project tab of the repository so that you can see the latest updates and and todos to be done and issues to be resolved about the project. Also feel free to add your own issues and todos to the project tab so that you can keep track of your work and others can see what you are working on.
-
-Follow these steps to set up your development environment for Everato:
-
-1. **Fork the repository**: Create a personal copy of the Everato repository on GitHub.
-2. **Clone your fork**: Clone the repository to your local machine.
-3. **Set up environment variables**: Copy the `.env.example` file to `.env` and configure it with your settings.
-4. **Install development tools**: Use `make install` to install necessary dependencies and tools.
-5. **Start the database**: Use `make db` to start the PostgreSQL database.
-6. **Run migrations**: Apply database migrations using `make migrate-up`.
-7. **Run the application**: Start the Everato application in development mode with `make dev`.
-8. **Access the application**: Open your web browser and navigate to `http://localhost:8080` to see the running application.
-
-### Prerequisites
-
-- Go 1.24+
-- PostgreSQL 15+
-- Docker and Docker Compose (for development environment)
-- Make (for running development commands)
-- Node.js and npm/pnpm (for TailwindCSS compilation)
-
-### Getting Started
-
-1. Fork the repository and clone your fork:
-
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/everato.git
-    cd everato
-    ```
-
-2. Add the original repository as upstream:
-
-    ```bash
-    git remote add upstream https://github.com/dtg-lucifer/everato.git
-    ```
-
-3. Set up environment variables:
-
-    ```bash
-    cp .env.example .env
-    # Edit .env file with your configuration
-    ```
-
-4. Install development tools:
-
-    ```bash
-    make install
-    ```
-
-5. Start the database:
-
-    ```bash
-    make db
-    ```
-
-6. Run migrations:
-
-    ```bash
-    make migrate-up
-    ```
-
-7. Run the application in development mode:
-
-    ```bash
-    make dev
-    ```
-
-## Code Style and Standards
-
-Everato follows strict code style guidelines to maintain code quality and consistency:
-
-### Go Code
-
-- Follow the [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
-- Format your code using `gofmt` or `go fmt`
-- Run `golangci-lint` before submitting code
-- Document all exported functions, types, and methods
-- Organize imports alphabetically with standard library imports first
-
-### HTML/CSS/JavaScript
-
-- Use 4 spaces for indentation in HTML and CSS
-- Format HTML templates with appropriate indentation
-- Follow BEM naming conventions for CSS classes
-
-### SQL
-
-- Use uppercase for SQL keywords
-- Format queries with appropriate indentation and line breaks
-- Add comments for complex queries
-
-### General Guidelines
-
-- Write clear, descriptive comments for complex logic
-- Keep functions focused on a single responsibility
-- Avoid deep nesting of control structures
-- Prefer explicit error handling over implicit one
-- Include appropriate logging at different severity levels
-
-## Branch Naming Conventions
-
-Follow these naming conventions for branches:
-
-- `feature/short-description` - For new features
-- `bugfix/issue-number-short-description` - For bug fixes
-- `refactor/component-name` - For code refactoring
-- `docs/what-changed` - For documentation updates
-- `test/what-tested` - For adding or updating tests
-
-## Commit Message Guidelines
-
-Write clear, meaningful commit messages:
-
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests after the first line
-- Consider using the following format:
-
-```
-type(scope): Short description
-
-Longer description if needed, explaining the context and motivation.
-
-Fixes #123
-```
-
-Where `type` can be:
-
-- feat: (new feature)
-- fix: (bug fix)
-- docs: (documentation changes)
-- style: (formatting, missing semi-colons, etc; no code change)
-- refactor: (refactoring production code)
-- test: (adding missing tests, refactoring tests)
-- chore: (updating build tasks, package manager configs, etc)
-
-## Pull Request Process
-
-1. Ensure your branch is up to date with the main branch
-2. Run all tests and ensure they pass
-3. Format your code according to the style guidelines
-4. Create a pull request with a clear title and description
-5. Reference any relevant issues
-6. Wait for code review and address any feedback
-
-### Pull Request Template
-
-When creating a pull request, include:
-
-- A description of the changes
-- The motivation behind the changes
-- Any breaking changes
-- Screenshots (if applicable)
-- Steps to test the changes
-
-## Reporting Bugs
-
-When reporting bugs, include:
-
-1. A clear, descriptive title
-2. Steps to reproduce the issue
-3. Expected behavior
-4. Actual behavior
-5. Environment information (OS, browser, Go version, etc.)
-6. Any relevant logs or screenshots
-
-## Feature Requests
-
-When requesting features, include:
-
-1. A clear, descriptive title
-2. A detailed description of the proposed feature
-3. The motivation behind the feature
-4. Any alternatives you've considered
-5. Example use cases
-
-## Testing
-
-- Write tests for all new features and bug fixes
-- Ensure all tests pass before submitting a pull request
-- Include unit tests, integration tests, and end-to-end tests as appropriate
-- Run `make test` to execute the test suite
-
-### Testing Guidelines
-
-- Use table-driven tests where appropriate
-- Mock external dependencies in unit tests
-- Write clear test descriptions
-- Test edge cases and error conditions
-
-## Project Structure
-
-Everato follows a well-organized directory structure:
-
-```
-everato/
-├── assets/                # Project assets like architecture diagrams
-├── components/            # UI components for templ rendering
-├── config/                # Configuration management
-├── docker/                # Docker-related files for development
-├── internal/              # Private application code
-│   ├── db/                # Database-related code
-│   ├── handlers/          # HTTP request handlers
-│   ├── middlewares/       # HTTP middleware components
-│   ├── services/          # Business logic
-│   └── utils/             # Utility functions
-├── pages/                 # Page templates (templ)
-├── pkg/                   # Shared public libraries
-├── public/                # Static assets (served directly)
-├── scripts/               # Utility scripts
-├── styles/                # Source CSS files (TailwindCSS)
-└── templates/             # HTML templates
-```
-
-Follow this structure when adding new code to the project.
-
-## Communication
-
-- Use GitHub Issues for bug reports and feature requests
-- Use Pull Requests for code contributions and reviews
-- Follow a respectful and inclusive communication style
-- Be patient with responses and feedback
-
-### Code of Conduct
-
-By participating in this project, you agree to abide by the following principles:
-
-- Be respectful and inclusive
-- Exercise empathy and kindness
-- Be open to constructive feedback
-- Focus on what's best for the community
-- Show courtesy and respect in all interactions
-
-## License
-
-By contributing to Everato, you agree that your contributions will be licensed under the project's [license](LICENSE).
+Thank you for your interest in contributing to **Everato**! Everato is an open-source, full-stack event management platform distributed as a single self-contained binary. This guide will help you set up your development environment, understand our coding standards, and submit contributions effectively.
 
 ---
 
-Thank you for contributing to Everato! Your efforts help make this project better for everyone.
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Development Environment Setup](#development-environment-setup)
+3. [Payment Gateway Configuration](#payment-gateway-configuration)
+4. [Project Structure](#project-structure)
+5. [Code Style and Standards](#code-style-and-standards)
+6. [Branch & Commit Conventions](#branch--commit-conventions)
+7. [Testing Guidelines](#testing-guidelines)
+8. [Pull Request Process](#pull-request-process)
+9. [Code of Conduct](#code-of-conduct)
+
+---
+
+## Architecture Overview
+
+Everato is structured around clean, modern technologies:
+
+- **Backend**: Go 1.24+, Gorilla Mux, pgx/v5 for high-performance PostgreSQL access.
+- **Database & Queries**: PostgreSQL 15+, SQL migrations with `golang-migrate`, type-safe compile-time queries generated via `sqlc`.
+- **Frontend**: React 19, TypeScript, Vite, TailwindCSS (located in `www/`).
+- **Single Binary Distribution**: In production builds, the compiled Vite frontend (`www/dist/`) and templates are embedded into the Go binary using Go's `embed` package.
+- **Ticketing & Attendance**: Cryptographically signed QR codes (HMAC-SHA256) with gate scanner check-in.
+- **Multi-Gateway Payments**: Configurable support for **Razorpay**, **Stripe**, and **Cashfree**.
+
+---
+
+## Development Environment Setup
+
+### Prerequisites
+
+- **Go**: 1.24 or higher
+- **Node.js**: 20+ and **pnpm** (preferred package manager)
+- **PostgreSQL**: 15+ (or Docker Compose)
+- **Make**: For executing build and automation tasks
+
+### Step-by-Step Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/dtg-lucifer/everato.git
+   cd everato
+   ```
+
+2. **Configure Environment Variables**:
+   Copy the example environment file and customize your settings:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Install Tools & Frontend Dependencies**:
+   ```bash
+   make install
+   make frontend-install
+   ```
+
+4. **Start the Database**:
+   ```bash
+   make db
+   ```
+
+5. **Apply Migrations**:
+   ```bash
+   make migrate-up
+   ```
+
+6. **Seed Test Data** (Optional):
+   ```bash
+   make seed
+   ```
+
+7. **Run in Development Mode**:
+   - Backend with Air (hot reload):
+     ```bash
+     make dev
+     ```
+   - Frontend development server (Vite):
+     ```bash
+     make frontend-dev
+     ```
+   The backend API will be available at `http://localhost:8080/api/v1` and the frontend UI at `http://localhost:5173`.
+
+---
+
+## Payment Gateway Configuration
+
+Everato supports multiple payment gateways via a pluggable provider interface. You can select your provider in `config.yaml` or via the `PAYMENT_PROVIDER` environment variable.
+
+### Choosing a Provider
+
+In `config.yaml`:
+```yaml
+payment:
+    provider: razorpay # Options: "razorpay", "stripe", "cashfree"
+    currency: INR
+```
+
+Or in your `.env` file:
+```bash
+PAYMENT_PROVIDER=razorpay
+PAYMENT_CURRENCY=INR
+```
+
+### Provider-Specific Environment Variables
+
+Depending on your selected provider, the backend requires specific environment variables:
+
+#### 1. Razorpay (`PAYMENT_PROVIDER=razorpay`)
+```bash
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_secret_key
+RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
+```
+
+#### 2. Stripe (`PAYMENT_PROVIDER=stripe`)
+```bash
+STRIPE_SECRET_KEY=sk_test_your_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+```
+
+#### 3. Cashfree (`PAYMENT_PROVIDER=cashfree`)
+```bash
+CASHFREE_APP_ID=your_cashfree_app_id
+CASHFREE_SECRET_KEY=your_cashfree_secret_key
+CASHFREE_ENV=TEST # Options: TEST (sandbox) or PRODUCTION
+```
+
+> **Note:** If no credentials are provided or if an event is free (amount = 0), Everato automatically bypasses payment and confirms bookings directly.
+>
+> 📖 **Complete Setup Walkthrough**: For an in-depth, step-by-step developer tutorial on obtaining credentials, setting up webhook endpoints, local testing via ngrok, and going live with bank payouts, check out the [Payment Setup & Self-Hosting Guide](file:///home/piush/Prog/proj/everato/docs/PAYMENT_SETUP_GUIDE.md).
+
+
+---
+
+## Project Structure
+
+```
+everato/
+├── bin/                          # Compiled binaries
+├── config/                       # Application configuration struct & loader
+├── config.yaml                   # YAML configuration file
+├── docker/                       # Docker compose files for PostgreSQL and monitoring
+├── internal/
+│   ├── db/
+│   │   ├── migrations/           # Versioned SQL migrations (.up.sql & .down.sql)
+│   │   ├── queries/              # SQL queries managed by SQLC
+│   │   ├── repository/           # Type-safe Go database code generated by SQLC
+│   │   └── seed/                 # Database seed script
+│   ├── handlers/v1/api/          # REST API HTTP handlers (one handler per file)
+│   ├── middlewares/              # HTTP middleware (AuthGuard, AdminMiddleware, CORS, Logger)
+│   ├── services/                 # Domain business logic
+│   │   ├── admin/                # Admin auth & permissions
+│   │   ├── booking/              # Booking lifecycle & seat availability
+│   │   ├── checkin/              # QR attendance validation & attendee analytics
+│   │   ├── event/                # Event creation & management
+│   │   ├── mailer/               # SMTP email delivery
+│   │   ├── payment/              # Multi-provider payments (Razorpay, Stripe, Cashfree)
+│   │   ├── ticket/               # QR ticket generation & HMAC verification
+│   │   └── user/                 # User auth, registration & JWT sessions
+│   └── utils/                    # Shared utilities (HTTP writer, UUID, slug, env)
+├── pkg/                          # Public shared packages (logger, jwt, templates)
+├── scripts/                      # Migration and helper shell scripts
+├── templates/mail/               # HTML email templates (ticket pass, confirmations, receipts)
+├── www/                          # React + TypeScript frontend
+│   ├── src/
+│   │   ├── components/           # Reusable UI components (Navbar, CheckinSection, etc.)
+│   │   ├── contexts/             # React Context providers (AuthContext)
+│   │   ├── hooks/                # Custom React hooks (useAuth)
+│   │   ├── lib/                  # API client, auth utilities, and TypeScript types
+│   │   ├── pages/                # Application views (Home, Events, Booking, MyTickets, Admin)
+│   │   └── routes.tsx            # Application routing table
+│   └── package.json              # Frontend package configuration
+├── Makefile                      # Project automation commands
+├── server.go                     # Core HTTP server initialization & route mounting
+└── main.go                       # Application entrypoint
+```
+
+---
+
+## Code Style and Standards
+
+### Go Backend
+
+- **Formatting**: Always format with `make fmt` (`gofmt -s` and `go fmt ./...`).
+- **Imports**: Group imports into three blocks separated by blank lines: Standard Library → Third-party packages → Local repository packages.
+- **Naming Conventions**:
+  - Packages: Single word, lowercase (`ticket`, `checkin`, `payment`).
+  - Handlers: PascalCase (`PaymentHandler`, `CheckinHandler`) implementing `handlers.Handler`.
+  - Database queries: Defined in `internal/db/queries/*.sql` with SQLC annotations, generated using `make sqlc-gen`.
+- **Error Handling**: Explicitly check errors. Never ignore returned errors. Use structured logging with `pkg.NewLogger()`.
+
+### TypeScript / React Frontend
+
+- **Tab Width**: 4 spaces (`.prettierrc.json`).
+- **Type Safety**: Strictly type all API responses and component props. Never use untyped `any` unless strictly necessary.
+- **TailwindCSS**: Use utility classes with mobile-first responsive design. Avoid inline CSS styles.
+- **API Client**: Centralize all API calls in `www/src/lib/api.ts`.
+
+---
+
+## Branch & Commit Conventions
+
+### Branch Naming
+- `feat/feature-name` — New feature implementation
+- `fix/bug-description` — Bug fix
+- `refactor/component-name` — Code restructuring without functional changes
+- `docs/topic-name` — Documentation improvements
+- `test/test-scope` — Adding or improving tests
+
+### Commit Messages
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```
+<type>(<scope>): <short description>
+
+[optional body providing additional context]
+
+[optional footer(s) referencing issue numbers]
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+
+Example:
+```
+feat(payment): add cashfree and razorpay payment gateway providers
+```
+
+---
+
+## Testing Guidelines
+
+Run tests before submitting any pull request:
+
+```bash
+# Run all Go unit & integration tests
+make test
+
+# Generate HTML coverage report
+make test-coverage
+
+# Verify frontend types and linting
+make frontend-check
+make frontend-lint
+
+# Build production binary to verify embedding
+make build
+```
+
+---
+
+## Pull Request Process
+
+1. Fork the repo and create your branch from `master` or `main`.
+2. Ensure all unit tests pass (`make test`).
+3. Ensure the frontend builds cleanly without type errors (`make frontend-check && make frontend-build`).
+4. Ensure the single binary compiles (`make build`).
+5. Open a Pull Request with a clear description of changes, motivation, and test steps.
+
+---
+
+## Code of Conduct
+
+Everato is an inclusive and welcoming community. Please treat all contributors and users with respect and constructive feedback.

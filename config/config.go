@@ -20,8 +20,16 @@ type Config struct {
 	Logging        bool        `yaml:"logging"`     // Whether to enable logging
 	RequestTimeout string      `yaml:"req_timeout"` // Maximum request timeout duration (e.g., "15s")
 	Server         Server      `yaml:"server"`      // Server-specific configuration
-	DataBase       DataBase    `yaml:"database"`    // Database connection configuration
-	SuperUsers     []SuperUser `yaml:"super_users"` // List of predefined super users
+	DataBase       DataBase      `yaml:"database"`    // Database connection configuration
+	Payment        PaymentConfig `yaml:"payment"`     // Payment gateway configuration
+	SuperUsers     []SuperUser   `yaml:"super_users"` // List of predefined super users
+}
+
+// PaymentConfig contains settings for payment gateways.
+// Supported providers: "razorpay", "stripe", "cashfree"
+type PaymentConfig struct {
+	Provider string `yaml:"provider"` // Selected payment gateway: razorpay, stripe, cashfree
+	Currency string `yaml:"currency"` // Default currency (e.g., INR, USD)
 }
 
 // SuperUser represents a predefined administrative user with elevated permissions.

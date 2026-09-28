@@ -88,7 +88,7 @@ func NewAuthHandler(cfg *config.Config) *AuthHandler {
 func (h *AuthHandler) RegisterRoutes(router *mux.Router) {
 	auth_router := router.PathPrefix(h.BasePath).Subrouter()
 
-	//auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
+	auth_router.HandleFunc("/register", h.Register).Methods(http.MethodPost)              // Register a new user
 	auth_router.HandleFunc("/login", h.Login).Methods(http.MethodPost)             // Login an existing user (returning the jwt token)
 	auth_router.HandleFunc("/verify-email", h.VerifyEmail).Methods(http.MethodGet) // Verify the user's email address
 	auth_router.HandleFunc("/refresh", h.Refresh).Methods(http.MethodPost)         // Refresh the JWT token @TODO
@@ -226,6 +226,35 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	// Delegate token refresh logic to the user service
 	// This separates route handling from business logic for better maintainability
 	user.RefreshUserToken(wr, h.Repo, r)
+}
+
+// Register handles new user registration requests.
+// It validates the request, creates a new user account, and sends a verification email.
+//
+// HTTP Method: POST
+// Route: /api/v1/auth/register
+//
+// Request body: JSON with user details (email, password, first_name, last_name)
+// Response:
+//   - 201 Created with user details on success
+//   - 400 Bad Request if validation fails
+//   - 409 Conflict if email already exists
+//   - 502 Bad Gateway if database connection fails
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	wr := utils.NewHttpWriter(w, r)
+
+	// Validate database repository connectivity
+	if h.Repo == nil {
+		wr.Status(http.StatusBadGateway).Json(
+			utils.M{
+				"message": "BAD_GATEWAY, No database connection, Oops!",
+			},
+		)
+		return
+	}
+
+	// Delegate user creation to the service layer
+	user.CreateUser(wr, h.Repo, h.Conn, h.Cfg)
 }
 
 // ResetPassword initiates the password reset process.

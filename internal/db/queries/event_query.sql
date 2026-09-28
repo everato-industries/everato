@@ -231,6 +231,18 @@ WHERE code = $1
     AND usage_count < usage_limit
 LIMIT 1;
 
+-- name: GetCouponByCode :one
+SELECT * FROM coupons
+WHERE code = $1 AND event_id = $2
+LIMIT 1;
+
+-- name: IncrementCouponUsage :one
+UPDATE coupons
+SET usage_count = usage_count + 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;
+
 -- name: GetTicketTypesByEventSlug :many
 SELECT tt.* FROM ticket_types tt
 JOIN events e ON tt.event_id = e.id

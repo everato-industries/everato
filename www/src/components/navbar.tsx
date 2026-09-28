@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -8,6 +9,8 @@ export default function Navbar() {
     null,
   );
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -23,6 +26,11 @@ export default function Navbar() {
         console.error("Failed to fetch server info:", error);
       });
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <nav className="top-0 z-40 sticky bg-white border-gray-200 border-b">
@@ -53,6 +61,36 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Auth buttons */}
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/my-tickets"
+                  className="text-gray-600 hover:text-black font-medium transition-colors duration-200"
+                >
+                  My Tickets
+                </Link>
+                <span className="text-gray-400 text-sm">
+                  {user?.firstName} {user?.lastName}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="btn-secondary text-sm"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link to="/auth/login" className="text-gray-600 hover:text-black font-medium transition-colors duration-200">
+                  Sign in
+                </Link>
+                <Link to="/auth/register" className="btn-primary text-sm">
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -96,6 +134,40 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/my-tickets"
+                    className="text-gray-600 hover:text-black font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Tickets
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                    className="text-left text-gray-600 hover:text-black font-medium"
+                  >
+                    Logout ({user?.firstName})
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/login"
+                    className="text-gray-600 hover:text-black font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/auth/register"
+                    className="text-gray-600 hover:text-black font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

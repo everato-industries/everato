@@ -191,4 +191,164 @@ export const adminAPI = {
     },
 };
 
+// ─── Booking API ──────────────────────────────────────────────────────────────
+
+export interface CreateBookingRequest {
+    event_id: string;
+    tickets: Array<{
+        ticket_type_id: string;
+        quantity: number;
+    }>;
+    coupon_code?: string;
+}
+
+export const bookingAPI = {
+    /** Create a new booking (auth required) */
+    createBooking: (data: CreateBookingRequest) =>
+        api.post("/bookings/create", data),
+
+    /** Get all bookings for a specific user */
+    getUserBookings: (userId: string) =>
+        api.get(`/bookings/user/${userId}`),
+
+    /** Get a single booking's details */
+    getBookingDetails: (bookingId: string) =>
+        api.get(`/bookings/${bookingId}`),
+
+    /** Cancel (soft-delete) a booking */
+    cancelBooking: (bookingId: string) =>
+        api.delete(`/bookings/${bookingId}`),
+
+    /** Check real-time ticket availability for an event */
+    checkAvailability: (eventId: string) =>
+        api.get(`/events/${eventId}/availability`),
+};
+
+// ─── User API ─────────────────────────────────────────────────────────────────
+
+export const userAPI = {
+    /** Register a new user account */
+    register: (data: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        password: string;
+    }) => api.post("/auth/register", data),
+
+    /** Login and receive a JWT token */
+    login: (email: string, password: string) =>
+        api.post("/auth/login", { email, password }),
+
+    /** Refresh the JWT access token */
+    refresh: () => api.post("/auth/refresh"),
+};
+
+// ─── Ticket API ───────────────────────────────────────────────────────────────
+
+export interface Ticket {
+    id: string;
+    booking_id: string;
+    ticket_type_id?: string;
+    ticket_type_name?: string;
+    ticket_number: string;
+    qr_code_data: string;
+    qr_code_image?: string; // base64 PNG
+    is_checked_in: boolean;
+    checked_in_at?: string;
+    created_at: string;
+}
+
+export const ticketAPI = {
+    /** Get all tickets and QR codes for a booking */
+    getTicketsByBooking: (bookingId: string) =>
+        api.get(`/tickets/booking/${bookingId}`),
+
+    /** Get a single ticket by its UUID */
+    getTicketById: (ticketId: string) =>
+        api.get(`/tickets/${ticketId}`),
+};
+
+// ─── Check-in / Attendance API ────────────────────────────────────────────────
+
+export interface CheckinScanRequest {
+    qr_data: string;
+    location?: string;
+    device_info?: string;
+}
+
+export interface AttendanceStats {
+    total_tickets: number;
+    checked_in_count: number;
+    not_checked_in_count: number;
+}
+
+export interface EventAttendee {
+    ticket_id: string;
+    ticket_number: string;
+    is_checked_in: boolean;
+    checked_in_at?: string;
+    user_email: string;
+    first_name: string;
+    last_name: string;
+    ticket_type_name: string;
+}
+
+export const checkinAPI = {
+    /** Scan and validate QR code for check-in */
+    scan: (data: CheckinScanRequest) =>
+        api.post("/checkin/scan", data),
+
+    /** Get check-in statistics for an event */
+    getStats: (eventId: string) =>
+        api.get(`/checkin/events/${eventId}/stats`),
+
+    /** Get full attendee list for an event */
+    getAttendees: (eventId: string) =>
+        api.get(`/checkin/events/${eventId}/attendees`),
+};
+
+// ─── Payment API ──────────────────────────────────────────────────────────────
+
+export interface PaymentClientConfig {
+    provider: "razorpay" | "stripe" | "cashfree" | "none";
+    enabled: boolean | string;
+    key_id?: string;
+    publishable_key?: string;
+    app_id?: string;
+    env?: string;
+    currency?: string;
+    message?: string;
+}
+
+export interface PaymentOrderResponse {
+    order_id: string;
+    provider: string;
+    amount: number;
+    currency: string;
+    key_id?: string;
+    client_secret?: string;
+    session_id?: string;
+    metadata?: Record<string, string>;
+}
+
+export interface VerifyPaymentRequest {
+    booking_id: string;
+    order_id: string;
+    payment_id: string;
+    signature?: string;
+}
+
+export const paymentAPI = {
+    /** Get active payment provider configuration and client public keys */
+    getConfig: () => api.get("/payments/config"),
+
+    /** Create payment order with active provider for a booking */
+    createOrder: (bookingId: string) =>
+        api.post("/payments/create-order", { booking_id: bookingId }),
+
+    /** Verify payment signature or completion */
+    verifyPayment: (data: VerifyPaymentRequest) =>
+        api.post("/payments/verify", data),
+};
+
 export default api;
